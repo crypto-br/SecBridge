@@ -101,7 +101,7 @@ Este projeto está licenciado sob a [MIT License](LICENSE).
 
 ## Contato
 
-Para mais informações ou perguntas, entre em contato com [Luiz Machado](https://github.com/cryptobr).
+Para mais informações ou perguntas, entre em contato com [Luiz Machado](https://github.com/crypto-br).
 
 
 Este `README.md` fornece uma visão geral completa da ferramenta SecBridge, incluindo como instalá-la, usá-la, e como contribuir.
