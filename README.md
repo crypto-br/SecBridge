@@ -45,7 +45,7 @@ Você pode executar a ferramenta com diferentes opções, dependendo de sua nece
   python secbridge.py --prowler
   ```
 
-- **Iniciar o Dashboard do Prowler:**
+- **Iniciar o Dashboard do Prowler (a propria ferramenta ja possui um dashboard, aqui apenas ligados ele):**
   ```bash
   python secbridge.py --prowler-dash
   ```
