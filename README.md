@@ -75,6 +75,12 @@ Você pode executar a ferramenta com diferentes opções, dependendo de sua nece
   python secbridge.py --pacu-dash
   ```
 
+  ![image](https://github.com/user-attachments/assets/3d40d8f2-1fcb-47a9-ba1e-a69922a1be99)
+
+  ![image](https://github.com/user-attachments/assets/476551c1-20a3-4336-9846-67473d787740)
+
+
+
 - **Configurar um Novo Perfil AWS-CLI:**
   ```bash
   python secbridge.py --np
