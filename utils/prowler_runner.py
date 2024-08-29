@@ -2,22 +2,22 @@ import os
 import subprocess
 
 def run_prowler(profile_for_prowler):
-    print("Executando o Prowler...")
+    print("Running Prowler...")
     try:
         prowler_command = ["prowler", "aws", "--severity", "critical", "--profile", f"{profile_for_prowler}", "-M", "json-asff"]
         try:
             process = subprocess.run(prowler_command, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
-            return (f"Erro na execução do comando Prowler: {e}")
+            return (f"Error executing Prowler command: {e}")
         except Exception as e:
-            return (f"Erro inesperado ao executar o Prowler: {e}")
+            return (f"Unexpected error while executing Prowler: {e}")
 
         try:
             output_text = process.stdout.strip()
         except AttributeError as e:
-            return (f"Erro ao processar a saída do Prowler: {e}")
+            return (f"Error processing Prowler output: {e}")
         except Exception as e:
-            return (f"Erro inesperado ao processar a saída do Prowler: {e}")
+            return (f"Unexpected error processing Prowler output: {e}")
 
         if output_text:
             try:
@@ -26,16 +26,16 @@ def run_prowler(profile_for_prowler):
                         json_path = line.split()[-1]
                         try:
                             if os.path.exists(json_path):
-                                print(f"Arquivo JSON-ASFF gerado em: {json_path}")
+                                print(f"JSON-ASFF file generated at: {json_path}")
                                 return json_path
                         except OSError as e:
-                            return (f"Erro ao verificar a existência do arquivo JSON: {e}")
+                            return (f"Error checking the existence of the JSON file: {e}")
                         except Exception as e:
-                            return (f"Erro inesperado ao verificar o arquivo JSON: {e}")
+                            return (f"Unexpected error checking the JSON file: {e}")
             except Exception as e:
-                return (f"Erro ao processar as linhas da saída do Prowler: {e}")
+                return (f"Error processing Prowler output lines: {e}")
         else:
-            return "Nenhuma saída do Prowler foi capturada."
+            return "No output captured from Prowler."
 
     except Exception as e:
-        return (f"Erro ao rodar o Prowler: {e}")
+        return (f"Error running Prowler: {e}")
