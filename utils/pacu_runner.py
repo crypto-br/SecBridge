@@ -3,7 +3,7 @@ import subprocess
 import json
 
 def run_pacu(profile_for_pacu, session_name, category):
-    print("Executando o PACU Framework baseado nos dados do finding.")
+    print("Running PACU Framework based on the finding data.")
     
     os.environ['AWS_PROFILE'] = profile_for_pacu
 
@@ -101,14 +101,14 @@ def run_pacu(profile_for_pacu, session_name, category):
     ]
 
 
-    # Lista para armazenar os resultados
+    # List to store results
     results = []
 
-    # Verifica se a sessão já existe e ativa, ou cria uma nova sessão
+    # Check if the session already exists and is active, or create a new session
     try:
         activate_session_command = ['pacu', '--session', session_name]
         subprocess.run(activate_session_command, check=True)
-        print("AQUI")
+        print("HERE")
     except subprocess.CalledProcessError:
         create_session_command = ['pacu', '--new-session', session_name]
         subprocess.run(create_session_command, check=True)   
@@ -132,7 +132,7 @@ def run_pacu(profile_for_pacu, session_name, category):
                 pacu_command = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile_for_pacu]
                 print(module_name)
             elif module_name == "iam__enum_action_query":
-                print("Esse modulo precisa de uma query caso")
+                print("This module requires a query case")
             elif module_name == "systemsmanager__download_parameters":
                 downloads_dir = os.path.expanduser("~/.local/share/pacu/data/downloads/ssm_parameters/")
                 os.makedirs(downloads_dir, exist_ok=True)
@@ -142,12 +142,12 @@ def run_pacu(profile_for_pacu, session_name, category):
             else:
                 pacu_command = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--module-args', "--regions us-east-2", '--import-keys', profile_for_pacu]
                 print(pacu_command)
-            # Executa o comando do PACU e caso seja necessario rodar novamente uma enumeração antes colocamos como "y" para que a mesma seja feita.
+            # Execute the PACU command and if necessary rerun an enumeration, we input "y" to proceed.
             process = subprocess.Popen(pacu_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, text=True)
-            stdout, stderr = process.communicate(input="y\n")  # Responde "Y" a qualquer solicitação de confirmação
+            stdout, stderr = process.communicate(input="y\n")  # Responds "Y" to any confirmation prompts
             if "AccessDeniedException" in stderr:
-                stderr = "Modulo não pode ser executado por falta de permissão"
-            # Armazena o resultado em um dicionário
+                stderr = "Module cannot be executed due to lack of permission"
+            # Store the result in a dictionary
             result = {
                 "module": module_name,
                 "stdout": stdout,
@@ -160,17 +160,17 @@ def run_pacu(profile_for_pacu, session_name, category):
         for module_name in category:
             pacu_command = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile_for_pacu]
             process = subprocess.Popen(pacu_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, text=True)
-            stdout, stderr = process.communicate(input="y\n")  # Responde "Y" a qualquer solicitação de confirmação
-            # Armazena o resultado em um dicionário
+            stdout, stderr = process.communicate(input="y\n")  # Responds "Y" to any confirmation prompts
+            # Store the result in a dictionary
             result = {
                 "module": module_name,
                 "stdout": stdout,
                 "stderr": stderr
             }
             results.append(result)  
-    # Salva os resultados em um arquivo JSON
+    # Save the results in a JSON file
     output_file = f"reports/data/report.json"
     with open(output_file, 'w') as f:
         json.dump(results, f, indent=4)
     
-    print(f"Resultados salvos em {output_file}")
+    print(f"Results saved in {output_file}")
