@@ -1,8 +1,8 @@
-from utils.dependencies import verificar_deps
-from utils.aws_config import configurar_perfil
+from utils.dependencies import check_deps
+from utils.aws_config import configure_profile
 from utils.prowler_runner import run_prowler
 from utils.pacu_runner import run_pacu
-from utils.pacu_report import gerar_relatorio
+from utils.pacu_report import generate_report
 import sys
 import time
 import json
@@ -21,29 +21,30 @@ Luiz Machado (@cryptobr)
 """)
 
 print_header()
+
 def main():
-    # Condicionais dos parametros
+    # Conditional parameters
     if "--deps" in sys.argv or "-deps" in sys.argv:
         print("#################################")
-        print("Verificando Dependências...")
+        print("Checking Dependencies...")
         print("#################################")
         time.sleep(1)
-        verificar_deps()
+        check_deps()
         sys.exit(1)
 
     if "--prowler" in sys.argv or "-prowler" in sys.argv:
         print("#################################")
-        print("Iniciando o Prowler...")
+        print("Starting Prowler...")
         time.sleep(1)
         print("#################################")
-        profile_for_prowler = input("Informe o profile do AWS-CLI que deseja utilizar: \n")
+        profile_for_prowler = input("Enter the AWS-CLI profile you want to use: \n")
         print("#################################")
         run_prowler(profile_for_prowler)
         sys.exit(1)
 
     if "--prowler-dash" in sys.argv or "-prowler-dash" in sys.argv:
         print("#################################")
-        print("Iniciando o Prowler Dashboad...")
+        print("Starting Prowler Dashboard...")
         time.sleep(1)
         print("#################################")
         os.system("prowler dashboard")
@@ -52,39 +53,39 @@ def main():
 
     if "--pacu-enum" in sys.argv or "-pacu-enum" in sys.argv:
         print("#################################")
-        print("Limpados dados de sessoes....")
+        print("Cleaning session data...")
         time.sleep(1)
         os.system("rm -rf ~/.local/share/pacu/*")
         print("#################################")
-        print("Iniciando o Pacu framework em modo de enumreração...")
+        print("Starting PACU framework in enumeration mode...")
         time.sleep(1)
         print("#################################")
-        profile_for_pacu = input("Informe o profile do AWS-CLI que deseja utilizar: \n")
-        session_name = input("Informe o nome da sessao para iniciar o PACU: \n")
+        profile_for_pacu = input("Enter the AWS-CLI profile you want to use: \n")
+        session_name = input("Enter the session name to start PACU: \n")
         category = "category_enum"
         run_pacu(profile_for_pacu, session_name, category)
         print("#################################")
-        print("Gerando relatorio...")
-        gerar_relatorio()
+        print("Generating report...")
+        generate_report()
         time.sleep(1)
-        print("Relatorio disponivel em --pacu-dash")
+        print("Report available in --pacu-dash")
         print("#################################")
         
         sys.exit(1)
 
     if "--pacu" in sys.argv or "-pacu" in sys.argv:
         print("#################################")
-        print("Limpados dados de sessoes....")
+        print("Cleaning session data...")
         time.sleep(1)
         print("#################################")
         os.system("rm -rf ~/.local/share/pacu/*")
         time.sleep(1)
-        profile_for_pacu = input("Informe o profile do AWS-CLI que deseja utilizar: \n")
+        profile_for_pacu = input("Enter the AWS-CLI profile you want to use: \n")
         print("#################################")
-        session_name = input("Informe o nome da sessao para iniciar o PACU: \n")
+        session_name = input("Enter the session name to start PACU: \n")
         time.sleep(1)
         print("#################################")
-        print("Lista de categorias: \n")
+        print("List of categories: \n")
         print("""
 category_enum
 category_exploit
@@ -96,14 +97,14 @@ category_evade
 category_persist
         """)
         print("#################################")
-        category = input("Informe a categoria que deseja iniciar no PACU: \n")
+        category = input("Enter the category you want to start in PACU: \n")
         print("#################################")
         run_pacu(profile_for_pacu, session_name, category)
         sys.exit(1)
     
     if "--prune-pacu" in sys.argv or "-prune-pacu" in sys.argv:
         print("#################################")
-        print("Deletando dados das sessões do pacu framework")
+        print("Deleting session data from PACU framework")
         os.system("rm -rf ~/.local/share/pacu/*")
         print("#################################")
 
@@ -112,47 +113,47 @@ category_persist
         os.system("python3 -m http.server -d reports/")
 
     if "--full" in sys.argv or "-full" in sys.argv:
-        print("Limpados dados de sessoes....\n")
+        print("Cleaning session data...\n")
         time.sleep(1)
         os.system("rm -rf ~/.local/share/pacu/*")
         print("#################################")
-        profile_for_secbridge = input("Informe o profile do AWS-CLI que deseja utilizar: \n")
+        profile_for_secbridge = input("Enter the AWS-CLI profile you want to use: \n")
         print("#################################")
-        session_name = input("Informe o nome da sessao: \n")
+        session_name = input("Enter the session name: \n")
         print("#################################")
         json_file_path = run_prowler(profile_for_secbridge)
         with open(f'{json_file_path}') as pr:
             risks = json.load(pr)
-        # Iniciando enumeração com PACU
+        # Starting enumeration with PACU
         category = "category_enum"
         run_pacu(profile_for_pacu, session_name, category)
         
     if "--np" in sys.argv or "-np" in sys.argv:
         print("#################################")
-        print("Configurando um novo profile para o AWS-CLI...")
+        print("Configuring a new profile for AWS-CLI...")
         time.sleep(1)
         print("#################################")
-        configurar_perfil()
+        configure_profile()
         sys.exit(1)
 
     if "--help" in sys.argv or "-help" in sys.argv:
         print("""
-Utilização: python secbridge.py [opção]
+Usage: python secbridge.py [option]
 
-Opções disponiveis:
-    --deps, -deps                   Verifica dependências necessárias (AWS-CLI, Python3, Prowler e PACU)
-    --prowler, -prowler             Inicia o Prowler
-    --prowler-dash, -prowler-dash   Inicia o Prowler Dashboard
-    --pacu, -pacu                   Inicia o PACU Framework informando a categoria  é necessário infromar --category
-    --pacu-enum, -pacu-enum         Inicia o PACU Framework em modo de enumeração e gera um relatrorio
-    --full, -full                   Inicia o prowler e o pacu framework gerando relatorio
-    --prune-pacu, -prune-pacu       Remove arquivos de sessão do PACU Framework
-    --pacu-dash, -pacu-dash         Inicia o servidor web na porta 8000
-    --np, -np                       Configura um novo perfil no AWS CLI
+Available options:
+    --deps, -deps                   Check necessary dependencies (AWS-CLI, Python3, Prowler, and PACU)
+    --prowler, -prowler             Start Prowler
+    --prowler-dash, -prowler-dash   Start Prowler Dashboard
+    --pacu, -pacu                   Start PACU Framework, specifying the category is required using --category
+    --pacu-enum, -pacu-enum         Start PACU Framework in enumeration mode and generate a report
+    --full, -full                   Start both Prowler and PACU framework, generating a report
+    --prune-pacu, -prune-pacu       Remove PACU Framework session files
+    --pacu-dash, -pacu-dash         Start the web server on port 8000
+    --np, -np                       Configure a new profile in AWS CLI
 """)
         sys.exit(1)
     
-    print("sem argumentos, utilize o --help para ver as opções")
+    print("No arguments provided, use --help to see the options")
 
 if __name__ == "__main__":
     main()
