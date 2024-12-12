@@ -100,6 +100,12 @@ category_persist
         category = input("Enter the category you want to start in PACU: \n")
         print("#################################")
         run_pacu(profile_for_pacu, session_name, category)
+        print("#################################")
+        print("Generating report...")
+        generate_report()
+        time.sleep(1)
+        print("Report available in --pacu-dash")
+        print("#################################")
         sys.exit(1)
     
     if "--prune-pacu" in sys.argv or "-prune-pacu" in sys.argv:
