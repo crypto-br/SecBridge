@@ -27,7 +27,6 @@ def check_deps():
         if ask_user(f"Do you want to install it? [1] yes / [2] no \n") == 1:
             subprocess.run(["sudo", package_manager, "update", "-y"])
             subprocess.run(["sudo", package_manager, "install", "-y", "python3"])
-            subprocess.run(["sudo", package_manager, "install", "-y", "python3-pip"])
             print("Python3 installed successfully.")
         else:
             print("Installation is necessary. Exiting.")
@@ -41,8 +40,8 @@ def check_deps():
         if ask_user(f"Do you want to install it? [1] yes / [2] no \n") == 1:
             subprocess.run(["sudo", package_manager, "update", "-y"])
             subprocess.run(["sudo", package_manager, "install", "-y", "pipx"])
-            subprocess.run(["pipx", "ensurepath"])
-            subprocess.run(["pipx", "install", "prowler"])
+            subprocess.run(["sudo", "pipx", "ensurepath"])
+            subprocess.run(["sudo", "pipx", "install", "prowler"])
             print("Prowler installed successfully.")
         else:
             print("Installation is necessary. Exiting.")

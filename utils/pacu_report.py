@@ -39,10 +39,13 @@ def generate_report():
         print(row)
 
     # Combine the extracted data into a string to apply regexes
-    output_content = ' '.join(str(row) for row in pacu_session_data)
+    combined_data = pacu_session_data + aws_key_data
+    output_content = ' '.join(str(row) for row in combined_data)
 
     # Patterns to identify different types of AWS resources
     patterns = {
+        # pacu_session_data
+        "AccountId": r'account_id": "([^"]+)',
         "InstanceId": r'InstanceId": "([^"]+)',
         "VolumeId": r'VolumeId": "([^"]+)',
         "SecurityGroupId": r'GroupId": "([^"]+)',
@@ -76,6 +79,9 @@ def generate_report():
         "WAFWebACL": r'WebACLName": "([^"]+)',
         "IAMPolicy": r'PolicyName": "([^"]+)',
         "IAMGroup": r'GroupName": "([^"]+)',
+        # aws_key_data
+        "IAMRoleARN": r'arn:aws:iam::(?:aws|\d{12}):role/([^"]+)',
+        "IAMPolicyARN": r'arn:aws:iam::(?:aws|\d{12}):policy/([^"]+)'
     }
 
     # Dictionary to store the found resources

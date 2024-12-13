@@ -119,6 +119,7 @@ def run_pacu(profile_for_pacu, session_name, category):
                             "ec2__check_termination_protection", 
                             "guardduty__list_findings", 
                             "iam__bruteforce_permissions",
+                            "iam__enum_users_roles_policies_groups"
                             "iam__detect_honeytokens",
                             "iam__get_credential_report",
                             "inspector__get_reports",
