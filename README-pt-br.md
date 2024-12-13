@@ -1,6 +1,6 @@
 # SecBridge
 
-**Versão:** 1.0
+**Versão:** 1.1
 
 **Autor:** Luiz Machado (@cryptobr)
 
