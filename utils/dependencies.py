@@ -10,11 +10,38 @@ import sys
 import os
 import platform
 import logging
+from pathlib import Path
 
 def check_deps():
     """
     Verifica as dependências necessárias e instala as que estiverem ausentes.
+    
+    Returns:
+        dict: Um dicionário contendo o status da verificação e uma mensagem descritiva.
     """
+    # Configurar logging
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    log_file = log_dir / "dependencies.log"
+    
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
+    console_handler.setFormatter(console_formatter)
+    
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    logging.info("Verificando dependências do SecBridge...")
+    
+    # Detectar o sistema operacional
     os_type = detect_os()
     if os_type in ["Debian", "RedHat"]:
         package_manager = "apt-get" if os_type == "Debian" else "yum"
@@ -22,76 +49,109 @@ def check_deps():
         package_manager = "brew"
     else:
         logging.error("Sistema operacional não suportado.")
-        sys.exit(1)
+        return {"success": False, "message": "Sistema operacional não suportado."}
     
-    # Verificação do AWS CLI
-    if not command_exists("aws"):
-        logging.info("AWS CLI não está instalado.")
-        if ask_user("Deseja instalar o AWS CLI? [1] sim / [2] não: ") == 1:
-            if package_manager in ["apt-get", "yum"]:
-                run_command(["sudo", package_manager, "update", "-y"], "atualizando a lista de pacotes")
-                run_command(["sudo", package_manager, "install", "-y", "awscli"], "instalando o AWS CLI")
-            elif package_manager == "brew":
-                run_command(["brew", "install", "awscli"], "instalando o AWS CLI")
-            logging.info("AWS CLI instalado com sucesso.")
+    # Lista de dependências para verificar
+    dependencies = [
+        {
+            "name": "AWS CLI",
+            "command": "aws",
+            "install_commands": {
+                "apt-get": ["sudo", "apt-get", "update", "-y", "&&", "sudo", "apt-get", "install", "-y", "awscli"],
+                "yum": ["sudo", "yum", "update", "-y", "&&", "sudo", "yum", "install", "-y", "awscli"],
+                "brew": ["brew", "install", "awscli"]
+            },
+            "required": True
+        },
+        {
+            "name": "Python3",
+            "command": "python3",
+            "install_commands": {
+                "apt-get": ["sudo", "apt-get", "update", "-y", "&&", "sudo", "apt-get", "install", "-y", "python3", "python3-pip"],
+                "yum": ["sudo", "yum", "update", "-y", "&&", "sudo", "yum", "install", "-y", "python3", "python3-pip"],
+                "brew": ["brew", "install", "python3"]
+            },
+            "required": True
+        },
+        {
+            "name": "Prowler",
+            "command": "prowler",
+            "install_commands": {
+                "apt-get": ["sudo", "apt-get", "update", "-y", "&&", "sudo", "apt-get", "install", "-y", "pipx", "&&", "sudo", "pipx", "ensurepath", "&&", "sudo", "pipx", "install", "prowler"],
+                "yum": ["sudo", "yum", "update", "-y", "&&", "sudo", "yum", "install", "-y", "pipx", "&&", "sudo", "pipx", "ensurepath", "&&", "sudo", "pipx", "install", "prowler"],
+                "brew": ["brew", "install", "pipx", "&&", "pipx", "ensurepath", "&&", "pipx", "install", "prowler"]
+            },
+            "required": True
+        },
+        {
+            "name": "PACU Framework",
+            "command": "pacu",
+            "install_commands": {
+                "apt-get": ["python3", "-m", "pip", "install", "-U", "pacu"],
+                "yum": ["python3", "-m", "pip", "install", "-U", "pacu"],
+                "brew": ["python3", "-m", "pip", "install", "-U", "pacu"]
+            },
+            "required": True
+        }
+    ]
+    
+    # Verificar cada dependência
+    missing_deps = []
+    for dep in dependencies:
+        if not command_exists(dep["command"]):
+            logging.info(f"{dep['name']} não está instalado.")
+            missing_deps.append(dep)
         else:
-            logging.error("A instalação do AWS CLI é obrigatória. Encerrando.")
-            sys.exit(1)
+            logging.info(f"{dep['name']} já está instalado. [OK]")
+    
+    # Se houver dependências ausentes, perguntar ao usuário se deseja instalá-las
+    if missing_deps:
+        logging.info(f"Encontradas {len(missing_deps)} dependências ausentes.")
+        
+        for dep in missing_deps:
+            if dep["required"]:
+                if ask_user(f"Deseja instalar {dep['name']}? [1] sim / [2] não: ") == 1:
+                    try:
+                        # Converter a lista de comandos em uma string para execução
+                        install_cmd = " ".join(dep["install_commands"][package_manager])
+                        logging.info(f"Instalando {dep['name']}...")
+                        
+                        # Executar o comando de instalação
+                        result = subprocess.run(install_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                        
+                        # Verificar se a instalação foi bem-sucedida
+                        if command_exists(dep["command"]):
+                            logging.info(f"{dep['name']} instalado com sucesso.")
+                        else:
+                            logging.error(f"Falha ao instalar {dep['name']}. Por favor, instale manualmente.")
+                            return {"success": False, "message": f"Falha ao instalar {dep['name']}. Por favor, instale manualmente."}
+                    except subprocess.CalledProcessError as e:
+                        logging.error(f"Erro durante a instalação de {dep['name']}: {e}")
+                        logging.error(f"Saída de erro: {e.stderr}")
+                        return {"success": False, "message": f"Erro durante a instalação de {dep['name']}: {e}"}
+                else:
+                    logging.error(f"A instalação de {dep['name']} é obrigatória. Encerrando.")
+                    return {"success": False, "message": f"A instalação de {dep['name']} é obrigatória."}
+    
+    # Verificar se todas as dependências estão instaladas agora
+    all_deps_installed = all(command_exists(dep["command"]) for dep in dependencies)
+    
+    if all_deps_installed:
+        logging.info("Todas as dependências estão instaladas corretamente.")
+        return {"success": True, "message": "Todas as dependências estão instaladas corretamente."}
     else:
-        logging.info("AWS CLI já está instalado. [OK]")
-
-    # Verificação do Python3
-    if not command_exists("python3"):
-        logging.info("Python3 não está instalado.")
-        if ask_user("Deseja instalar o Python3? [1] sim / [2] não: ") == 1:
-            if package_manager in ["apt-get", "yum"]:
-                run_command(["sudo", package_manager, "update", "-y"], "atualizando a lista de pacotes")
-                run_command(["sudo", package_manager, "install", "-y", "python3"], "instalando o Python3")
-            elif package_manager == "brew":
-                run_command(["brew", "install", "python3"], "instalando o Python3")
-            logging.info("Python3 instalado com sucesso.")
-        else:
-            logging.error("A instalação do Python3 é necessária. Encerrando.")
-            sys.exit(1)
-    else:
-        logging.info("Python3 já está instalado. [OK]")
-
-    # Verificação do Prowler
-    if not command_exists("prowler"):
-        logging.info("Prowler não está instalado.")
-        if ask_user("Deseja instalar o Prowler? [1] sim / [2] não: ") == 1:
-            if package_manager in ["apt-get", "yum"]:
-                run_command(["sudo", package_manager, "update", "-y"], "atualizando a lista de pacotes")
-                run_command(["sudo", package_manager, "install", "-y", "pipx"], "instalando o pipx")
-                run_command(["sudo", "pipx", "ensurepath"], "configurando pipx")
-                run_command(["sudo", "pipx", "install", "prowler"], "instalando o Prowler")
-            elif package_manager == "brew":
-                run_command(["brew", "install", "pipx"], "instalando o pipx")
-                run_command(["pipx", "ensurepath"], "configurando pipx")
-                run_command(["pipx", "install", "prowler"], "instalando o Prowler")
-            logging.info("Prowler instalado com sucesso.")
-        else:
-            logging.error("A instalação do Prowler é obrigatória. Encerrando.")
-            sys.exit(1)
-    else:
-        logging.info("Prowler já está instalado. [OK]")
-
-    # Verificação do PACU Framework
-    if not command_exists("pacu"):
-        logging.info("PACU Framework não está instalado.")
-        if ask_user("Deseja instalar o PACU Framework? [1] sim / [2] não: ") == 1:
-            logging.info("Instalando o PACU Framework...")
-            run_command(["python3", "-m", "pip", "install", "-U", "pacu"], "instalando o PACU Framework")
-            logging.info("PACU Framework instalado com sucesso.")
-        else:
-            logging.error("A instalação do PACU Framework é obrigatória. Encerrando.")
-            sys.exit(1)
-    else:
-        logging.info("PACU Framework já está instalado. [OK]")
+        logging.error("Algumas dependências ainda estão faltando. Por favor, instale-as manualmente.")
+        return {"success": False, "message": "Algumas dependências ainda estão faltando. Por favor, instale-as manualmente."}
 
 def command_exists(command):
     """
     Verifica se um comando existe no sistema.
+    
+    Args:
+        command (str): O comando a ser verificado.
+        
+    Returns:
+        bool: True se o comando existir, False caso contrário.
     """
     result = subprocess.run(["which", command], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return result.returncode == 0
@@ -99,6 +159,12 @@ def command_exists(command):
 def ask_user(prompt):
     """
     Solicita uma entrada ao usuário e retorna um inteiro (1 ou 2).
+    
+    Args:
+        prompt (str): A mensagem a ser exibida ao usuário.
+        
+    Returns:
+        int: 1 para sim, 2 para não.
     """
     while True:
         try:
@@ -113,37 +179,60 @@ def ask_user(prompt):
 def detect_os():
     """
     Detecta o sistema operacional e retorna um identificador.
+    
+    Returns:
+        str: "Debian", "RedHat", "macOS" ou None se não for suportado.
     """
     os_info = platform.system()
     if os_info == "Linux":
         try:
             distro = subprocess.check_output(["lsb_release", "-is"], text=True).strip().lower()
-            if distro in ["debian", "ubuntu"]:
+            if distro in ["debian", "ubuntu", "linuxmint", "pop"]:
                 return "Debian"
-            elif distro in ["centos", "redhat", "fedora", "amazon"]:
+            elif distro in ["centos", "redhat", "fedora", "amazon", "rhel"]:
                 return "RedHat"
             else:
-                logging.error("Distribuição Linux não suportada: %s", distro)
-                sys.exit(1)
+                logging.error(f"Distribuição Linux não suportada: {distro}")
+                return None
         except subprocess.CalledProcessError:
-            logging.error("Não foi possível determinar a distribuição Linux usando lsb_release.")
-            sys.exit(1)
+            # Tentar método alternativo para detectar a distribuição
+            try:
+                if os.path.exists("/etc/debian_version"):
+                    return "Debian"
+                elif os.path.exists("/etc/redhat-release"):
+                    return "RedHat"
+                else:
+                    logging.error("Não foi possível determinar a distribuição Linux.")
+                    return None
+            except Exception as e:
+                logging.error(f"Erro ao detectar a distribuição Linux: {e}")
+                return None
     elif os_info == "Darwin":
         return "macOS"
     else:
-        logging.error("Sistema operacional não suportado: %s", os_info)
-        sys.exit(1)
+        logging.error(f"Sistema operacional não suportado: {os_info}")
+        return None
 
 def run_command(command, description=""):
     """
     Executa um comando no sistema utilizando subprocess.run com verificação de erros.
+    
+    Args:
+        command (list): Lista de strings representando o comando e seus argumentos.
+        description (str, optional): Descrição do comando para logging.
+        
+    Returns:
+        subprocess.CompletedProcess: O resultado da execução do comando.
+        
+    Raises:
+        subprocess.CalledProcessError: Se o comando falhar.
     """
     try:
-        logging.info("Executando comando: %s", ' '.join(command))
-        subprocess.run(command, check=True)
+        logging.info(f"Executando comando: {' '.join(command)}")
+        return subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
-        logging.error("Erro durante %s: %s", description, e)
-        sys.exit(1)
+        logging.error(f"Erro durante {description}: {e}")
+        raise
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
