@@ -1,6 +1,6 @@
 # SecBridge
 
-**Version:** 1.1
+**Version:** 1.2
 
 **Author:** Luiz Machado (@cryptobr)
 
@@ -13,9 +13,11 @@ SecBridge is an integration tool that connects [Prowler](https://github.com/prow
 - **Dependency Check:** Confirms the existence of essential dependencies like AWS CLI, Python3, Prowler, and Pacu.
 - **Prowler Execution:** Runs Prowler to perform a security assessment on the specified AWS account.
 - **Pacu Framework Execution:** Allows the execution of the Pacu Framework for exploitation based on specific categories.
-- **Report Generation:** Generates detailed reports after running Pacu.
+- **Report Generation:** Generates detailed reports after running Pacu, including HTML and JSON formats.
 - **Dashboards:** Launches dashboards for visualizing Prowler and Pacu results.
-- **AWS Profile Configuration:** Configures AWS-CLI profiles directly through the tool.
+- **AWS Profile Configuration:** Configures AWS-CLI profiles directly through the tool with credential validation.
+- **Structured Logging:** Provides comprehensive logging with different verbosity levels and colored formatting.
+- **Unit Testing:** Includes automated tests to ensure code quality.
 
 ## Installation
 
@@ -26,53 +28,63 @@ SecBridge is an integration tool that connects [Prowler](https://github.com/prow
    ```
 
 2. **Install Dependencies:**
-   Ensure that AWS CLI, Python3, Prowler, and Pacu are installed. You can check the dependencies by running:
    ```bash
-   python secbridge.py --deps
+   pip install -r requirements.txt
+   ```
+
+3. **Check System Dependencies:**
+   Ensure that AWS CLI, Python3, Prowler, and Pacu are installed. You can check and install the dependencies by running:
+   ```bash
+   python secbridge.py deps
    ```
 
 ## Usage
 
-You can run the tool with different options depending on your needs:
+You can run the tool with different commands:
 
 - **Check Dependencies:**
   ```bash
-  python secbridge.py --deps
+  python secbridge.py deps
   ```
 
 - **Run Prowler:**
   ```bash
-  python secbridge.py --prowler
+  python secbridge.py prowler
   ```
 
-- **Start Prowler Dashboard (the tool already includes a dashboard, here it just activates it):**
+- **Start Prowler Dashboard:**
   ```bash
-  python secbridge.py --prowler-dash
+  python secbridge.py prowler-dash
   ```
 
 - **Run Pacu (Enumeration):**
   ```bash
-  python secbridge.py --pacu-enum
+  python secbridge.py pacu-enum
   ```
 
-- **Run Pacu (All Categories):**
+- **Run Pacu (With Specific Category):**
   ```bash
-  python secbridge.py --pacu
+  python secbridge.py pacu
   ```
 
-- **Start Pacu with Prowler:**
+- **Start Pacu with Prowler (Full Assessment):**
   ```bash
-  python secbridge.py --full
+  python secbridge.py full
   ```
 
 - **Delete Pacu Sessions:**
   ```bash
-  python secbridge.py --prune-pacu
+  python secbridge.py prune-pacu
   ```
 
 - **Start Pacu Dashboard:**
   ```bash
-  python secbridge.py --pacu-dash
+  python secbridge.py pacu-dash
+  ```
+  
+  You can specify a custom port:
+  ```bash
+  python secbridge.py pacu-dash --port 8080
   ```
 
   ![image](https://github.com/user-attachments/assets/3d40d8f2-1fcb-47a9-ba1e-a69922a1be99)
@@ -81,13 +93,44 @@ You can run the tool with different options depending on your needs:
 
 - **Set Up a New AWS-CLI Profile:**
   ```bash
-  python secbridge.py --np
+  python secbridge.py np
   ```
 
 - **Help:**
   ```bash
   python secbridge.py --help
   ```
+
+## Testing
+
+Run the unit tests to ensure everything is working correctly:
+
+```bash
+pytest tests/
+```
+
+## Project Structure
+
+```
+secbridge/
+├── config/
+│   └── pacu_modules.json     # Configuration for Pacu modules
+├── logs/                     # Log files directory
+├── reports/                  # Generated reports
+│   ├── data/                 # JSON data files
+│   └── prowler/              # Prowler reports
+├── tests/                    # Unit tests
+├── utils/                    # Utility modules
+│   ├── aws_config.py         # AWS profile configuration
+│   ├── dependencies.py       # Dependency checking
+│   ├── pacu_report.py        # Report generation for Pacu
+│   ├── pacu_runner.py        # Pacu execution
+│   └── prowler_runner.py     # Prowler execution
+├── requirements.txt          # Python dependencies
+├── CHANGELOG.md              # Change history
+├── secbridge.py              # Main application
+└── README.md                 # Documentation
+```
 
 ## Contribution
 
@@ -100,5 +143,3 @@ This project is licensed under the [MIT License](LICENSE).
 ## Contact
 
 For more information or questions, contact [Luiz Machado](https://www.linkedin.com/in/luizmachadoaws/).
-
-This `README.md` provides a comprehensive overview of the SecBridge tool, including how to install it, use it, and contribute.

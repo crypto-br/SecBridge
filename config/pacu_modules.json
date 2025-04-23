@@ -1,0 +1,106 @@
+{
+    "category_enum": [
+        "acm__enum",
+        "apigateway__enum",
+        "aws__enum_account",
+        "aws__enum_spend",
+        "cloudformation__download_data",
+        "codebuild__enum",
+        "cognito__enum",
+        "dynamodb__enum",
+        "ebs__enum_volumes_snapshots",
+        "ec2__check_termination_protection",
+        "ec2__download_userdata",
+        "ec2__enum",
+        "ecr__enum",
+        "ecs__enum",
+        "ecs__enum_task_def",
+        "eks__enum",
+        "enum__secrets",
+        "glue__enum",
+        "guardduty__list_accounts",
+        "guardduty__list_findings",
+        "iam__bruteforce_permissions",
+        "iam__detect_honeytokens",
+        "iam__enum_action_query",
+        "iam__enum_permissions",
+        "iam__enum_users_roles_policies_groups",
+        "iam__get_credential_report",
+        "inspector__get_reports",
+        "lambda__enum",
+        "lightsail__enum",
+        "organizations__enum",
+        "rds__enum",
+        "rds__enum_snapshots",
+        "route53__enum",
+        "systemsmanager__download_parameters",
+        "transfer_family__enum"
+    ],
+    "category_exploit": [
+        "api_gateway__create_api_keys",
+        "cognito__attack",
+        "ebs__explore_snapshots",
+        "ec2__startup_shell_script",
+        "ecs__backdoor_task_def",
+        "lightsail__download_ssh_keys",
+        "lightsail__generate_ssh_keys",
+        "lightsail__generate_temp_access",
+        "systemsmanager__rce_ec2"
+    ],
+    "category_escalate": [
+        "cfn__resource_injection",
+        "iam__privesc_scan"
+    ],
+    "category_recon_unauth": [
+        "ebs__enum_snapshots_unauth",
+        "iam__enum_roles",
+        "iam__enum_users"
+    ],
+    "category_exfil": [
+        "ebs__download_snapshots",
+        "rds__explore_snapshots",
+        "s3__download_bucket"
+    ],
+    "category_lateral_move": [
+        "cloudtrail__csv_injection",
+        "organizations__assume_role",
+        "vpc__enum_lateral_movement"
+    ],
+    "category_evade": [
+        "cloudtrail__download_event_history",
+        "cloudwatch__download_logs",
+        "detection__disruption",
+        "detection__enum_services",
+        "elb__enum_logging",
+        "guardduty__whitelist_ip",
+        "waf__enum"
+    ],
+    "category_persist": [
+        "ec2__backdoor_ec2_sec_groups",
+        "iam__backdoor_assume_role",
+        "iam__backdoor_users_keys",
+        "iam__backdoor_users_password",
+        "lambda__backdoor_new_roles",
+        "lambda__backdoor_new_sec_groups",
+        "lambda__backdoor_new_users"
+    ],
+    "special_modules": {
+        "aws__enum_account": true,
+        "aws__enum_spend": true,
+        "ec2__check_termination_protection": true,
+        "guardduty__list_findings": true,
+        "iam__bruteforce_permissions": true,
+        "iam__enum_users_roles_policies_groups": true,
+        "iam__detect_honeytokens": true,
+        "iam__get_credential_report": true,
+        "inspector__get_reports": true,
+        "route53__enum": true,
+        "organizations__enum": true,
+        "ecs__enum_task_def": true,
+        "ec2__download_userdata": true,
+        "iam__enum_permissions": true,
+        "lightsail__enum": true,
+        "iam__enum_action_query": true,
+        "systemsmanager__download_parameters": true
+    }
+}

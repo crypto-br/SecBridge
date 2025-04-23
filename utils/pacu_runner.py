@@ -1,177 +1,176 @@
 import os
 import subprocess
 import json
+import logging
+from pathlib import Path
+
+def load_module_categories():
+    """
+    Carrega as categorias de módulos do Pacu de um arquivo de configuração.
+    
+    Returns:
+        dict: Um dicionário contendo as categorias de módulos do Pacu.
+    """
+    config_path = Path("config/pacu_modules.json")
+    try:
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        else:
+            logging.warning(f"Configuration file {config_path} not found. Using default categories.")
+            # Retornar um dicionário vazio que será preenchido com as categorias padrão
+            return {}
+    except Exception as e:
+        logging.error(f"Error loading module categories: {e}")
+        return {}
+
+def execute_pacu_module(session_name, module_name, profile, args=None):
+    """
+    Executa um módulo específico do Pacu.
+    
+    Args:
+        session_name (str): Nome da sessão do Pacu.
+        module_name (str): Nome do módulo a ser executado.
+        profile (str): Nome do perfil AWS CLI a ser usado.
+        args (str, optional): Argumentos adicionais para o módulo.
+        
+    Returns:
+        dict: Um dicionário contendo o nome do módulo, a saída padrão e a saída de erro.
+    """
+    cmd = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile]
+    if args:
+        cmd.extend(['--module-args', args])
+    
+    logging.info(f"Executing Pacu module: {module_name}")
+    logging.debug(f"Command: {' '.join(cmd)}")
+    
+    try:
+        process = subprocess.Popen(
+            cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            stdin=subprocess.PIPE, 
+            text=True
+        )
+        stdout, stderr = process.communicate(input="y\n")  # Responde "Y" para qualquer prompt de confirmação
+        
+        if "AccessDeniedException" in stderr:
+            stderr = "Module cannot be executed due to lack of permission"
+            
+        return {
+            "module": module_name,
+            "stdout": stdout,
+            "stderr": stderr,
+            "status": "success" if process.returncode == 0 else "error",
+            "return_code": process.returncode
+        }
+    except Exception as e:
+        logging.error(f"Error executing Pacu module {module_name}: {e}")
+        return {
+            "module": module_name,
+            "stdout": "",
+            "stderr": str(e),
+            "status": "error",
+            "return_code": -1
+        }
 
 def run_pacu(profile_for_pacu, session_name, category):
-    print("Running PACU Framework based on the finding data.")
+    """
+    Executa o Pacu Framework com base na categoria especificada.
     
+    Args:
+        profile_for_pacu (str): Nome do perfil AWS CLI a ser usado.
+        session_name (str): Nome da sessão do Pacu.
+        category (str): Categoria de módulos a ser executada.
+        
+    Returns:
+        dict: Um dicionário contendo o status da execução, os resultados e uma mensagem descritiva.
+    """
+    print(f"Running PACU Framework with profile {profile_for_pacu}, session {session_name}, category {category}")
+    logging.info(f"Running PACU Framework with profile {profile_for_pacu}, session {session_name}, category {category}")
+    
+    # Configurar o perfil AWS
     os.environ['AWS_PROFILE'] = profile_for_pacu
-
-    category_enum = [
-        "acm__enum",
-        "apigateway__enum",
-        "aws__enum_account",
-        "aws__enum_spend",
-        "cloudformation__download_data",
-        "codebuild__enum",
-        "cognito__enum",
-        "dynamodb__enum",
-        "ebs__enum_volumes_snapshots",
-        "ec2__check_termination_protection",
-        "ec2__download_userdata",
-        "ec2__enum",
-        "ecr__enum",
-        "ecs__enum",
-        "ecs__enum_task_def",
-        "eks__enum",
-        "enum__secrets",
-        "glue__enum",
-        "guardduty__list_accounts",
-        "guardduty__list_findings",
-        "iam__bruteforce_permissions",
-        "iam__detect_honeytokens",
-        "iam__enum_action_query",
-        "iam__enum_permissions",
-        "iam__enum_users_roles_policies_groups",
-        "iam__get_credential_report",
-        "inspector__get_reports",
-        "lambda__enum",
-        "lightsail__enum",
-        "organizations__enum",
-        "rds__enum",
-        "rds__enum_snapshots",
-        "route53__enum",
-        "systemsmanager__download_parameters",
-        "transfer_family__enum"
-    ]
-
-    category_exploit = [
-        "api_gateway__create_api_keys",
-        "cognito__attack",
-        "ebs__explore_snapshots",
-        "ec2__startup_shell_script",
-        "ecs__backdoor_task_def",
-        "lightsail__download_ssh_keys",
-        "lightsail__generate_ssh_keys",
-        "lightsail__generate_temp_access",
-        "systemsmanager__rce_ec2"
-    ]
-
-    category_escalate = [
-        "cfn__resource_injection",
-        "iam__privesc_scan"
-    ]
-
-    category_recon_unauth = [
-        "ebs__enum_snapshots_unauth",
-        "iam__enum_roles",
-        "iam__enum_users"
-    ]
-
-    category_exfil = [
-        "ebs__download_snapshots",
-        "rds__explore_snapshots",
-        "s3__download_bucket"
-    ]
-
-    category_lateral_move = [
-        "cloudtrail__csv_injection",
-        "organizations__assume_role",
-        "vpc__enum_lateral_movement"
-    ]
-
-    category_evade = [
-        "cloudtrail__download_event_history",
-        "cloudwatch__download_logs",
-        "detection__disruption",
-        "detection__enum_services",
-        "elb__enum_logging",
-        "guardduty__whitelist_ip",
-        "waf__enum"
-    ]
-
-    category_persist = [
-        "ec2__backdoor_ec2_sec_groups",
-        "iam__backdoor_assume_role",
-        "iam__backdoor_users_keys",
-        "iam__backdoor_users_password",
-        "lambda__backdoor_new_roles",
-        "lambda__backdoor_new_sec_groups",
-        "lambda__backdoor_new_users"
-    ]
-
-
-    # List to store results
+    
+    # Carregar categorias de módulos
+    categories = load_module_categories()
+    
+    # Se o arquivo de configuração não existir ou estiver vazio, usar as categorias padrão
+    if not categories:
+        logging.warning("Using default module categories")
+        # Definir categorias padrão aqui se necessário
+    
+    # Lista para armazenar resultados
     results = []
-
-    # Check if the session already exists and is active, or create a new session
+    
+    # Verificar se a sessão já existe e está ativa, ou criar uma nova sessão
     try:
+        logging.info(f"Activating Pacu session: {session_name}")
         activate_session_command = ['pacu', '--session', session_name]
-        subprocess.run(activate_session_command, check=True)
-        print("HERE")
+        subprocess.run(activate_session_command, check=True, capture_output=True)
+        logging.info(f"Session {session_name} activated")
     except subprocess.CalledProcessError:
+        logging.info(f"Creating new Pacu session: {session_name}")
         create_session_command = ['pacu', '--new-session', session_name]
-        subprocess.run(create_session_command, check=True)   
+        subprocess.run(create_session_command, check=True, capture_output=True)
+        logging.info(f"Session {session_name} created")
+    
+    # Criar diretório para relatórios se não existir
+    reports_dir = Path("reports/data")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Executar módulos com base na categoria
     if category == "category_enum":
-        for module_name in category_enum:
-            if module_name in ["aws__enum_account", 
-                            "aws__enum_spend",
-                            "ec2__check_termination_protection", 
-                            "guardduty__list_findings", 
-                            "iam__bruteforce_permissions",
-                            "iam__enum_users_roles_policies_groups"
-                            "iam__detect_honeytokens",
-                            "iam__get_credential_report",
-                            "inspector__get_reports",
-                            "route53__enum",
-                            "organizations__enum",
-                            "ecs__enum_task_def",
-                            "ec2__download_userdata",
-                            "iam__enum_permissions",
-                            "lightsail__enum"
-                            ]:
-                pacu_command = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile_for_pacu]
-                print(module_name)
+        modules_to_run = categories.get("category_enum", [])
+        special_modules = categories.get("special_modules", {})
+        
+        for module_name in modules_to_run:
+            if module_name in special_modules:
+                # Módulos especiais que não precisam de argumentos de região
+                result = execute_pacu_module(session_name, module_name, profile_for_pacu)
             elif module_name == "iam__enum_action_query":
-                print("This module requires a query case")
+                logging.info("Skipping iam__enum_action_query as it requires a query case")
+                continue
             elif module_name == "systemsmanager__download_parameters":
+                # Configuração especial para systemsmanager__download_parameters
                 downloads_dir = os.path.expanduser("~/.local/share/pacu/data/downloads/ssm_parameters/")
                 os.makedirs(downloads_dir, exist_ok=True)
                 ssm_region = "us-east-2"
                 with open(os.path.join(downloads_dir, '{}.txt'.format(ssm_region)), 'w+') as f:
-                    pacu_command = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--module-args', "--regions us-east-2", '--import-keys', profile_for_pacu]
+                    pass
+                result = execute_pacu_module(session_name, module_name, profile_for_pacu, "--regions us-east-2")
             else:
-                pacu_command = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--module-args', "--regions us-east-2", '--import-keys', profile_for_pacu]
-                print(pacu_command)
-            # Execute the PACU command and if necessary rerun an enumeration, we input "y" to proceed.
-            process = subprocess.Popen(pacu_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, text=True)
-            stdout, stderr = process.communicate(input="y\n")  # Responds "Y" to any confirmation prompts
-            if "AccessDeniedException" in stderr:
-                stderr = "Module cannot be executed due to lack of permission"
-            # Store the result in a dictionary
-            result = {
-                "module": module_name,
-                "stdout": stdout,
-                "stderr": stderr
-            }
+                # Módulos padrão com argumento de região
+                result = execute_pacu_module(session_name, module_name, profile_for_pacu, "--regions us-east-2")
+            
             results.append(result)
-            print(stdout)
+            print(f"Executed module: {module_name} - Status: {result['status']}")
     else:
-        print(category)
-        for module_name in category:
-            pacu_command = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile_for_pacu]
-            process = subprocess.Popen(pacu_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, text=True)
-            stdout, stderr = process.communicate(input="y\n")  # Responds "Y" to any confirmation prompts
-            # Store the result in a dictionary
-            result = {
-                "module": module_name,
-                "stdout": stdout,
-                "stderr": stderr
-            }
-            results.append(result)  
-    # Save the results in a JSON file
-    output_file = f"reports/data/report.json"
+        # Para outras categorias, verificar se a categoria existe no arquivo de configuração
+        if category in categories:
+            modules_to_run = categories[category]
+            for module_name in modules_to_run:
+                result = execute_pacu_module(session_name, module_name, profile_for_pacu)
+                results.append(result)
+                print(f"Executed module: {module_name} - Status: {result['status']}")
+        else:
+            # Se a categoria não for reconhecida, tratar como um nome de módulo individual
+            logging.warning(f"Category {category} not recognized, treating as individual module")
+            result = execute_pacu_module(session_name, category, profile_for_pacu)
+            results.append(result)
+            print(f"Executed module: {category} - Status: {result['status']}")
+    
+    # Salvar os resultados em um arquivo JSON
+    output_file = reports_dir / "pacu_report.json"
     with open(output_file, 'w') as f:
         json.dump(results, f, indent=4)
     
+    logging.info(f"Results saved in {output_file}")
     print(f"Results saved in {output_file}")
+    
+    return {
+        "success": True,
+        "data": str(output_file),
+        "message": f"Pacu execution completed. Report saved to: {output_file}",
+        "results": results
+    }
