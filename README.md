@@ -1,6 +1,6 @@
 # SecBridge
 
-**Version:** 1.1.1
+**Version:** 1.2
 
 **Author:** Luiz Machado (@cryptobr)
 
@@ -16,7 +16,8 @@ SecBridge is an integration tool that connects [Prowler](https://github.com/prow
 - **Report Generation:** Generates detailed reports after running Pacu, including HTML and JSON formats.
 - **Dashboards:** Launches dashboards for visualizing Prowler and Pacu results.
 - **AWS Profile Configuration:** Configures AWS-CLI profiles directly through the tool with credential validation.
-- **Structured Logging:** Provides comprehensive logging with different verbosity levels.
+- **Structured Logging:** Provides comprehensive logging with different verbosity levels and colored formatting.
+- **Unit Testing:** Includes automated tests to ensure code quality.
 
 ## Installation
 
@@ -126,6 +127,7 @@ secbridge/
 │   ├── pacu_runner.py        # Pacu execution
 │   └── prowler_runner.py     # Prowler execution
 ├── requirements.txt          # Python dependencies
+├── CHANGELOG.md              # Change history
 ├── secbridge.py              # Main application
 └── README.md                 # Documentation
 ```
