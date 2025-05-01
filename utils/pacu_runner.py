@@ -6,10 +6,10 @@ from pathlib import Path
 
 def load_module_categories():
     """
-    Carrega as categorias de módulos do Pacu de um arquivo de configuração.
+    Loads Pacu module categories from a configuration file.
     
     Returns:
-        dict: Um dicionário contendo as categorias de módulos do Pacu.
+        dict: A dictionary containing Pacu module categories.
     """
     config_path = Path("config/pacu_modules.json")
     try:
@@ -18,7 +18,7 @@ def load_module_categories():
                 return json.load(f)
         else:
             logging.warning(f"Configuration file {config_path} not found. Using default categories.")
-            # Retornar um dicionário vazio que será preenchido com as categorias padrão
+            # Return an empty dictionary that will be filled with default categories
             return {}
     except Exception as e:
         logging.error(f"Error loading module categories: {e}")
@@ -26,16 +26,16 @@ def load_module_categories():
 
 def execute_pacu_module(session_name, module_name, profile, args=None):
     """
-    Executa um módulo específico do Pacu.
+    Executes a specific Pacu module.
     
     Args:
-        session_name (str): Nome da sessão do Pacu.
-        module_name (str): Nome do módulo a ser executado.
-        profile (str): Nome do perfil AWS CLI a ser usado.
-        args (str, optional): Argumentos adicionais para o módulo.
+        session_name (str): Name of the Pacu session.
+        module_name (str): Name of the module to execute.
+        profile (str): Name of the AWS CLI profile to use.
+        args (str, optional): Additional arguments for the module.
         
     Returns:
-        dict: Um dicionário contendo o nome do módulo, a saída padrão e a saída de erro.
+        dict: A dictionary containing the module name, standard output, and error output.
     """
     cmd = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile]
     if args:
@@ -52,7 +52,7 @@ def execute_pacu_module(session_name, module_name, profile, args=None):
             stdin=subprocess.PIPE, 
             text=True
         )
-        stdout, stderr = process.communicate(input="y\n")  # Responde "Y" para qualquer prompt de confirmação
+        stdout, stderr = process.communicate(input="y\n")  # Respond "Y" to any confirmation prompt
         
         if "AccessDeniedException" in stderr:
             stderr = "Module cannot be executed due to lack of permission"
@@ -76,34 +76,34 @@ def execute_pacu_module(session_name, module_name, profile, args=None):
 
 def run_pacu(profile_for_pacu, session_name, category):
     """
-    Executa o Pacu Framework com base na categoria especificada.
+    Runs the Pacu Framework based on the specified category.
     
     Args:
-        profile_for_pacu (str): Nome do perfil AWS CLI a ser usado.
-        session_name (str): Nome da sessão do Pacu.
-        category (str): Categoria de módulos a ser executada.
+        profile_for_pacu (str): Name of the AWS CLI profile to use.
+        session_name (str): Name of the Pacu session.
+        category (str): Category of modules to execute.
         
     Returns:
-        dict: Um dicionário contendo o status da execução, os resultados e uma mensagem descritiva.
+        dict: A dictionary containing the execution status, results, and a descriptive message.
     """
     print(f"Running PACU Framework with profile {profile_for_pacu}, session {session_name}, category {category}")
     logging.info(f"Running PACU Framework with profile {profile_for_pacu}, session {session_name}, category {category}")
     
-    # Configurar o perfil AWS
+    # Configure AWS profile
     os.environ['AWS_PROFILE'] = profile_for_pacu
     
-    # Carregar categorias de módulos
+    # Load module categories
     categories = load_module_categories()
     
-    # Se o arquivo de configuração não existir ou estiver vazio, usar as categorias padrão
+    # If the configuration file doesn't exist or is empty, use default categories
     if not categories:
         logging.warning("Using default module categories")
-        # Definir categorias padrão aqui se necessário
+        # Define default categories here if needed
     
-    # Lista para armazenar resultados
+    # List to store results
     results = []
     
-    # Verificar se a sessão já existe e está ativa, ou criar uma nova sessão
+    # Check if the session already exists and is active, or create a new session
     try:
         logging.info(f"Activating Pacu session: {session_name}")
         activate_session_command = ['pacu', '--session', session_name]
@@ -115,24 +115,24 @@ def run_pacu(profile_for_pacu, session_name, category):
         subprocess.run(create_session_command, check=True, capture_output=True)
         logging.info(f"Session {session_name} created")
     
-    # Criar diretório para relatórios se não existir
+    # Create directory for reports if it doesn't exist
     reports_dir = Path("reports/data")
     reports_dir.mkdir(parents=True, exist_ok=True)
     
-    # Executar módulos com base na categoria
+    # Execute modules based on category
     if category == "category_enum":
         modules_to_run = categories.get("category_enum", [])
         special_modules = categories.get("special_modules", {})
         
         for module_name in modules_to_run:
             if module_name in special_modules:
-                # Módulos especiais que não precisam de argumentos de região
+                # Special modules that don't need region arguments
                 result = execute_pacu_module(session_name, module_name, profile_for_pacu)
             elif module_name == "iam__enum_action_query":
                 logging.info("Skipping iam__enum_action_query as it requires a query case")
                 continue
             elif module_name == "systemsmanager__download_parameters":
-                # Configuração especial para systemsmanager__download_parameters
+                # Special configuration for systemsmanager__download_parameters
                 downloads_dir = os.path.expanduser("~/.local/share/pacu/data/downloads/ssm_parameters/")
                 os.makedirs(downloads_dir, exist_ok=True)
                 ssm_region = "us-east-2"
@@ -140,13 +140,13 @@ def run_pacu(profile_for_pacu, session_name, category):
                     pass
                 result = execute_pacu_module(session_name, module_name, profile_for_pacu, "--regions us-east-2")
             else:
-                # Módulos padrão com argumento de região
+                # Standard modules with region argument
                 result = execute_pacu_module(session_name, module_name, profile_for_pacu, "--regions us-east-2")
             
             results.append(result)
             print(f"Executed module: {module_name} - Status: {result['status']}")
     else:
-        # Para outras categorias, verificar se a categoria existe no arquivo de configuração
+        # For other categories, check if the category exists in the configuration file
         if category in categories:
             modules_to_run = categories[category]
             for module_name in modules_to_run:
@@ -154,13 +154,13 @@ def run_pacu(profile_for_pacu, session_name, category):
                 results.append(result)
                 print(f"Executed module: {module_name} - Status: {result['status']}")
         else:
-            # Se a categoria não for reconhecida, tratar como um nome de módulo individual
+            # If the category is not recognized, treat it as an individual module name
             logging.warning(f"Category {category} not recognized, treating as individual module")
             result = execute_pacu_module(session_name, category, profile_for_pacu)
             results.append(result)
             print(f"Executed module: {category} - Status: {result['status']}")
     
-    # Salvar os resultados em um arquivo JSON
+    # Save results to a JSON file
     output_file = reports_dir / "pacu_report.json"
     with open(output_file, 'w') as f:
         json.dump(results, f, indent=4)

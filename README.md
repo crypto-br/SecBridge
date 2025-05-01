@@ -21,6 +21,8 @@ SecBridge is an integration tool that connects [Prowler](https://github.com/prow
 
 ## Installation
 
+### Standard Installation
+
 1. **Clone the Repository:**
    ```bash
    git clone https://github.com/your-username/secbridge.git
@@ -37,6 +39,27 @@ SecBridge is an integration tool that connects [Prowler](https://github.com/prow
    ```bash
    python secbridge.py deps
    ```
+
+### Docker Installation
+
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/your-username/secbridge.git
+   cd secbridge
+   ```
+
+2. **Build and Run with Docker:**
+   ```bash
+   docker build -t secbridge .
+   docker run -it --rm -v ~/.aws:/root/.aws:ro -v $(pwd)/reports:/app/reports -v $(pwd)/logs:/app/logs secbridge
+   ```
+
+3. **Or use Docker Compose:**
+   ```bash
+   docker-compose up --build
+   ```
+
+   This will mount your AWS credentials and the reports/logs directories.
 
 ## Usage
 

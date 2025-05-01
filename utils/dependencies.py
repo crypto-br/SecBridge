@@ -14,12 +14,12 @@ from pathlib import Path
 
 def check_deps():
     """
-    Verifica as dependências necessárias e instala as que estiverem ausentes.
+    Checks required dependencies and installs missing ones.
     
     Returns:
-        dict: Um dicionário contendo o status da verificação e uma mensagem descritiva.
+        dict: A dictionary containing the check status and a descriptive message.
     """
-    # Configurar logging
+    # Configure logging
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
     log_file = log_dir / "dependencies.log"
@@ -39,19 +39,19 @@ def check_deps():
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
     
-    logging.info("Verificando dependências do SecBridge...")
+    logging.info("Checking SecBridge dependencies...")
     
-    # Detectar o sistema operacional
+    # Detect operating system
     os_type = detect_os()
     if os_type in ["Debian", "RedHat"]:
         package_manager = "apt-get" if os_type == "Debian" else "yum"
     elif os_type == "macOS":
         package_manager = "brew"
     else:
-        logging.error("Sistema operacional não suportado.")
-        return {"success": False, "message": "Sistema operacional não suportado."}
+        logging.error("Unsupported operating system.")
+        return {"success": False, "message": "Unsupported operating system."}
     
-    # Lista de dependências para verificar
+    # List of dependencies to check
     dependencies = [
         {
             "name": "AWS CLI",
@@ -95,53 +95,53 @@ def check_deps():
         }
     ]
     
-    # Verificar cada dependência
+    # Check each dependency
     missing_deps = []
     for dep in dependencies:
         if not command_exists(dep["command"]):
-            logging.info(f"{dep['name']} não está instalado.")
+            logging.info(f"{dep['name']} is not installed.")
             missing_deps.append(dep)
         else:
-            logging.info(f"{dep['name']} já está instalado. [OK]")
+            logging.info(f"{dep['name']} is already installed. [OK]")
     
-    # Se houver dependências ausentes, perguntar ao usuário se deseja instalá-las
+    # If there are missing dependencies, ask the user if they want to install them
     if missing_deps:
-        logging.info(f"Encontradas {len(missing_deps)} dependências ausentes.")
+        logging.info(f"Found {len(missing_deps)} missing dependencies.")
         
         for dep in missing_deps:
             if dep["required"]:
-                if ask_user(f"Deseja instalar {dep['name']}? [1] sim / [2] não: ") == 1:
+                if ask_user(f"Do you want to install {dep['name']}? [1] yes / [2] no: ") == 1:
                     try:
-                        # Converter a lista de comandos em uma string para execução
+                        # Convert the command list to a string for execution
                         install_cmd = " ".join(dep["install_commands"][package_manager])
-                        logging.info(f"Instalando {dep['name']}...")
+                        logging.info(f"Installing {dep['name']}...")
                         
-                        # Executar o comando de instalação
+                        # Execute the installation command
                         result = subprocess.run(install_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                         
-                        # Verificar se a instalação foi bem-sucedida
+                        # Check if the installation was successful
                         if command_exists(dep["command"]):
-                            logging.info(f"{dep['name']} instalado com sucesso.")
+                            logging.info(f"{dep['name']} installed successfully.")
                         else:
-                            logging.error(f"Falha ao instalar {dep['name']}. Por favor, instale manualmente.")
-                            return {"success": False, "message": f"Falha ao instalar {dep['name']}. Por favor, instale manualmente."}
+                            logging.error(f"Failed to install {dep['name']}. Please install it manually.")
+                            return {"success": False, "message": f"Failed to install {dep['name']}. Please install it manually."}
                     except subprocess.CalledProcessError as e:
-                        logging.error(f"Erro durante a instalação de {dep['name']}: {e}")
-                        logging.error(f"Saída de erro: {e.stderr}")
-                        return {"success": False, "message": f"Erro durante a instalação de {dep['name']}: {e}"}
+                        logging.error(f"Error during installation of {dep['name']}: {e}")
+                        logging.error(f"Error output: {e.stderr}")
+                        return {"success": False, "message": f"Error during installation of {dep['name']}: {e}"}
                 else:
-                    logging.error(f"A instalação de {dep['name']} é obrigatória. Encerrando.")
-                    return {"success": False, "message": f"A instalação de {dep['name']} é obrigatória."}
+                    logging.error(f"Installation of {dep['name']} is required. Exiting.")
+                    return {"success": False, "message": f"Installation of {dep['name']} is required."}
     
-    # Verificar se todas as dependências estão instaladas agora
+    # Check if all dependencies are installed now
     all_deps_installed = all(command_exists(dep["command"]) for dep in dependencies)
     
     if all_deps_installed:
-        logging.info("Todas as dependências estão instaladas corretamente.")
-        return {"success": True, "message": "Todas as dependências estão instaladas corretamente."}
+        logging.info("All dependencies are correctly installed.")
+        return {"success": True, "message": "All dependencies are correctly installed."}
     else:
-        logging.error("Algumas dependências ainda estão faltando. Por favor, instale-as manualmente.")
-        return {"success": False, "message": "Algumas dependências ainda estão faltando. Por favor, instale-as manualmente."}
+        logging.error("Some dependencies are still missing. Please install them manually.")
+        return {"success": False, "message": "Some dependencies are still missing. Please install them manually."}
 
 def command_exists(command):
     """
@@ -158,13 +158,13 @@ def command_exists(command):
 
 def ask_user(prompt):
     """
-    Solicita uma entrada ao usuário e retorna um inteiro (1 ou 2).
+    Prompts the user for input and returns an integer (1 or 2).
     
     Args:
-        prompt (str): A mensagem a ser exibida ao usuário.
+        prompt (str): The message to display to the user.
         
     Returns:
-        int: 1 para sim, 2 para não.
+        int: 1 for yes, 2 for no.
     """
     while True:
         try:
@@ -172,66 +172,72 @@ def ask_user(prompt):
             if choice in [1, 2]:
                 return choice
             else:
-                print("Por favor, escolha [1] ou [2].")
+                print("Please choose [1] or [2].")
         except ValueError:
-            print("Entrada inválida. Por favor, insira 1 ou 2.")
+            print("Invalid input. Please enter 1 or 2.")
 
 def detect_os():
     """
-    Detecta o sistema operacional e retorna um identificador.
+    Detects the operating system and returns an identifier.
     
     Returns:
-        str: "Debian", "RedHat", "macOS" ou None se não for suportado.
+        str: "Debian", "RedHat", "macOS" or None if not supported.
     """
     os_info = platform.system()
     if os_info == "Linux":
         try:
-            distro = subprocess.check_output(["lsb_release", "-is"], text=True).strip().lower()
-            if distro in ["debian", "ubuntu", "linuxmint", "pop"]:
-                return "Debian"
-            elif distro in ["centos", "redhat", "fedora", "amazon", "rhel"]:
-                return "RedHat"
-            else:
-                logging.error(f"Distribuição Linux não suportada: {distro}")
-                return None
-        except subprocess.CalledProcessError:
-            # Tentar método alternativo para detectar a distribuição
+            # First try using lsb_release command
             try:
-                if os.path.exists("/etc/debian_version"):
+                distro = subprocess.check_output(["lsb_release", "-is"], text=True).strip().lower()
+                if distro in ["debian", "ubuntu", "linuxmint", "pop"]:
                     return "Debian"
-                elif os.path.exists("/etc/redhat-release"):
+                elif distro in ["centos", "redhat", "fedora", "amazon", "rhel"]:
                     return "RedHat"
                 else:
-                    logging.error("Não foi possível determinar a distribuição Linux.")
-                    return None
-            except Exception as e:
-                logging.error(f"Erro ao detectar a distribuição Linux: {e}")
+                    logging.warning(f"Unsupported Linux distribution: {distro}")
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # lsb_release command not found, try alternative method
+                logging.warning("lsb_release command not found, trying alternative detection method")
+                pass
+                
+            # Alternative method to detect distribution
+            if os.path.exists("/etc/debian_version"):
+                logging.info("Detected Debian-based distribution via /etc/debian_version")
+                return "Debian"
+            elif os.path.exists("/etc/redhat-release"):
+                logging.info("Detected RedHat-based distribution via /etc/redhat-release")
+                return "RedHat"
+            else:
+                logging.error("Could not determine Linux distribution.")
                 return None
+        except Exception as e:
+            logging.error(f"Error detecting Linux distribution: {e}")
+            return None
     elif os_info == "Darwin":
         return "macOS"
     else:
-        logging.error(f"Sistema operacional não suportado: {os_info}")
+        logging.error(f"Unsupported operating system: {os_info}")
         return None
 
 def run_command(command, description=""):
     """
-    Executa um comando no sistema utilizando subprocess.run com verificação de erros.
+    Executes a system command using subprocess.run with error checking.
     
     Args:
-        command (list): Lista de strings representando o comando e seus argumentos.
-        description (str, optional): Descrição do comando para logging.
+        command (list): List of strings representing the command and its arguments.
+        description (str, optional): Description of the command for logging.
         
     Returns:
-        subprocess.CompletedProcess: O resultado da execução do comando.
+        subprocess.CompletedProcess: The result of the command execution.
         
     Raises:
-        subprocess.CalledProcessError: Se o comando falhar.
+        subprocess.CalledProcessError: If the command fails.
     """
     try:
-        logging.info(f"Executando comando: {' '.join(command)}")
+        logging.info(f"Executing command: {' '.join(command)}")
         return subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Erro durante {description}: {e}")
+        logging.error(f"Error during {description}: {e}")
         raise
 
 if __name__ == "__main__":
