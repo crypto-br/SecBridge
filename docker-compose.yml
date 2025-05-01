@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  secbridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ~/.aws:/root/.aws:ro  # Mount AWS credentials (read-only)
+      - ./reports:/app/reports # Mount reports directory
+      - ./logs:/app/logs      # Mount logs directory
+    environment:
+      - AWS_PROFILE=default   # Default AWS profile, can be overridden
+    ports:
+      - "8080:8080"           # For dashboards
+    tty: true                 # Keep terminal open for interactive use
+    stdin_open: true          # Allow interactive input
