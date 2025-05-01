@@ -186,27 +186,33 @@ def detect_os():
     os_info = platform.system()
     if os_info == "Linux":
         try:
-            distro = subprocess.check_output(["lsb_release", "-is"], text=True).strip().lower()
-            if distro in ["debian", "ubuntu", "linuxmint", "pop"]:
-                return "Debian"
-            elif distro in ["centos", "redhat", "fedora", "amazon", "rhel"]:
-                return "RedHat"
-            else:
-                logging.error(f"Unsupported Linux distribution: {distro}")
-                return None
-        except subprocess.CalledProcessError:
-            # Try alternative method to detect distribution
+            # First try using lsb_release command
             try:
-                if os.path.exists("/etc/debian_version"):
+                distro = subprocess.check_output(["lsb_release", "-is"], text=True).strip().lower()
+                if distro in ["debian", "ubuntu", "linuxmint", "pop"]:
                     return "Debian"
-                elif os.path.exists("/etc/redhat-release"):
+                elif distro in ["centos", "redhat", "fedora", "amazon", "rhel"]:
                     return "RedHat"
                 else:
-                    logging.error("Could not determine Linux distribution.")
-                    return None
-            except Exception as e:
-                logging.error(f"Error detecting Linux distribution: {e}")
+                    logging.warning(f"Unsupported Linux distribution: {distro}")
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # lsb_release command not found, try alternative method
+                logging.warning("lsb_release command not found, trying alternative detection method")
+                pass
+                
+            # Alternative method to detect distribution
+            if os.path.exists("/etc/debian_version"):
+                logging.info("Detected Debian-based distribution via /etc/debian_version")
+                return "Debian"
+            elif os.path.exists("/etc/redhat-release"):
+                logging.info("Detected RedHat-based distribution via /etc/redhat-release")
+                return "RedHat"
+            else:
+                logging.error("Could not determine Linux distribution.")
                 return None
+        except Exception as e:
+            logging.error(f"Error detecting Linux distribution: {e}")
+            return None
     elif os_info == "Darwin":
         return "macOS"
     else:
