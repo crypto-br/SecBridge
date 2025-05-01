@@ -26,23 +26,23 @@ from utils.pacu_report import generate_report
 # Configuração do logging
 def setup_logging():
     """
-    Configura o sistema de logging com formatação colorida e rotação de arquivos.
+    Configure the logging system with colored formatting and file rotation.
     """
-    # Criar diretório para logs se não existir
+    # Create logs directory if it doesn't exist
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
     
-    # Nome do arquivo de log com timestamp
+    # Log filename with timestamp
     timestamp = datetime.datetime.now().strftime("%Y%m%d")
     log_file = log_dir / f"secbridge_{timestamp}.log"
     
-    # Handler para arquivo
+    # File handler
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
     file_handler.setFormatter(file_formatter)
     
-    # Handler para console com cores
+    # Console handler with colors
     console_handler = colorlog.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_formatter = colorlog.ColoredFormatter(
@@ -57,15 +57,15 @@ def setup_logging():
     )
     console_handler.setFormatter(console_formatter)
     
-    # Configurar o logger raiz
+    # Configure root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
     
-    # Remover handlers existentes
+    # Remove existing handlers
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
     
-    # Adicionar os novos handlers
+    # Add new handlers
     root_logger.addHandler(file_handler)
     root_logger.addHandler(console_handler)
     
@@ -92,11 +92,11 @@ def run_command(command, description=""):
     Execute a system command using subprocess.run with error handling.
     
     Args:
-        command (list): Lista de strings representando o comando e seus argumentos.
-        description (str, optional): Descrição do comando para logging.
+        command (list): List of strings representing the command and its arguments.
+        description (str, optional): Description of the command for logging.
         
     Returns:
-        dict: Um dicionário contendo o status da execução e uma mensagem descritiva.
+        dict: A dictionary containing the execution status and a descriptive message.
     """
     try:
         logging.info(f"Executing command: {' '.join(command)}")
@@ -116,22 +116,22 @@ def prompt_input(prompt, cast_type=str, valid_options=None):
     Prompt user input with validation.
     
     Args:
-        prompt (str): A mensagem a ser exibida ao usuário.
-        cast_type (type, optional): O tipo para converter a entrada. Defaults to str.
-        valid_options (list, optional): Lista de opções válidas. Defaults to None.
+        prompt (str): The message to display to the user.
+        cast_type (type, optional): The type to convert the input to. Defaults to str.
+        valid_options (list, optional): List of valid options. Defaults to None.
         
     Returns:
-        O valor convertido para o tipo especificado.
+        The value converted to the specified type.
     """
     while True:
         try:
             value = cast_type(input(prompt))
             if valid_options and value not in valid_options:
-                print("Opção inválida. Tente novamente.")
+                print("Invalid option. Please try again.")
                 continue
             return value
         except ValueError:
-            print("Entrada inválida. Por favor, tente novamente.")
+            print("Invalid input. Please try again.")
 
 @click.group()
 def cli():
@@ -141,8 +141,8 @@ def cli():
 
 @cli.command()
 def deps():
-    """Verifica as dependências necessárias (AWS CLI, Python3, Prowler e PACU)."""
-    logging.info("Verificando dependências...")
+    """Checks required dependencies (AWS CLI, Python3, Prowler and PACU)."""
+    logging.info("Checking dependencies...")
     result = check_deps()
     if result["success"]:
         logging.info(result["message"])
@@ -151,9 +151,9 @@ def deps():
 
 @cli.command()
 def prowler():
-    """Inicia o Prowler para avaliação de segurança."""
-    logging.info("Iniciando o Prowler...")
-    profile = input("Digite o perfil do AWS-CLI que deseja utilizar: ").strip()
+    """Starts Prowler for security assessment."""
+    logging.info("Starting Prowler...")
+    profile = input("Enter the AWS-CLI profile you want to use: ").strip()
     result = run_prowler(profile)
     if result["success"]:
         logging.info(result["message"])
@@ -162,9 +162,9 @@ def prowler():
 
 @cli.command()
 def prowler_dash():
-    """Inicia o dashboard do Prowler."""
-    logging.info("Iniciando o Dashboard do Prowler...")
-    result = run_command(["prowler", "dashboard"], "iniciando Dashboard do Prowler")
+    """Starts the Prowler dashboard."""
+    logging.info("Starting Prowler Dashboard...")
+    result = run_command(["prowler", "dashboard"], "starting Prowler Dashboard")
     if result["success"]:
         logging.info(result["message"])
     else:
@@ -172,41 +172,41 @@ def prowler_dash():
 
 @cli.command()
 def pacu_enum():
-    """Inicia o PACU Framework no modo enumeração e gera um relatório."""
-    logging.info("Limpando dados de sessão do PACU...")
+    """Starts PACU Framework in enumeration mode and generates a report."""
+    logging.info("Cleaning PACU session data...")
     run_command(["rm", "-rf", os.path.expanduser("~/.local/share/pacu/*")],
-                "limpeza de sessão do PACU")
+                "cleaning PACU session")
     
-    logging.info("Iniciando o PACU em modo enumeração...")
-    profile = input("Digite o perfil do AWS-CLI que deseja utilizar: ").strip()
-    session_name = input("Digite o nome da sessão para iniciar o PACU: ").strip()
+    logging.info("Starting PACU in enumeration mode...")
+    profile = input("Enter the AWS-CLI profile you want to use: ").strip()
+    session_name = input("Enter the session name to start PACU: ").strip()
     category = "category_enum"
     
     result = run_pacu(profile, session_name, category)
     if result["success"]:
-        logging.info("PACU executado com sucesso. Gerando relatório...")
+        logging.info("PACU executed successfully. Generating report...")
         report_result = generate_report(result["data"])
         if report_result["success"]:
-            logging.info(f"Relatório gerado com sucesso: {report_result['data']['html_report']}")
+            logging.info(f"Report generated successfully: {report_result['data']['html_report']}")
         else:
-            logging.error(f"Erro ao gerar relatório: {report_result['message']}")
+            logging.error(f"Error generating report: {report_result['message']}")
     else:
-        logging.error(f"Erro ao executar PACU: {result['message']}")
+        logging.error(f"Error executing PACU: {result['message']}")
 
 @cli.command()
 def pacu():
-    """Inicia o PACU Framework com categoria informada."""
-    logging.info("Limpando dados de sessão do PACU...")
+    """Starts PACU Framework with specified category."""
+    logging.info("Cleaning PACU session data...")
     run_command(["rm", "-rf", os.path.expanduser("~/.local/share/pacu/*")],
-                "limpeza de sessão do PACU")
+                "cleaning PACU session")
     
-    profile = input("Digite o perfil do AWS-CLI que deseja utilizar: ").strip()
-    session_name = input("Digite o nome da sessão para iniciar o PACU: ").strip()
+    profile = input("Enter the AWS-CLI profile you want to use: ").strip()
+    session_name = input("Enter the session name to start PACU: ").strip()
     
-    logging.info("Categorias disponíveis:\n"
+    logging.info("Available categories:\n"
                  "category_enum, category_exploit, category_escalate, category_recon_unauth,\n"
                  "category_exfil, category_lateral_move, category_evade, category_persist")
-    category = input("Digite a categoria desejada para iniciar o PACU: ").strip()
+    category = input("Enter the desired category to start PACU: ").strip()
     
     result = run_pacu(profile, session_name, category)
     if result["success"]:
@@ -216,85 +216,85 @@ def pacu():
 
 @cli.command()
 def prune_pacu():
-    """Exclui os dados de sessão do PACU Framework."""
-    logging.info("Excluindo dados de sessão do PACU...")
+    """Deletes PACU Framework session data."""
+    logging.info("Deleting PACU session data...")
     result = run_command(["rm", "-rf", os.path.expanduser("~/.local/share/pacu/*")],
-                "exclusão de sessão do PACU")
+                "deleting PACU session")
     if result["success"]:
-        logging.info("Dados de sessão do PACU excluídos com sucesso.")
+        logging.info("PACU session data deleted successfully.")
     else:
-        logging.error(f"Erro ao excluir dados de sessão do PACU: {result['message']}")
+        logging.error(f"Error deleting PACU session data: {result['message']}")
 
 @cli.command()
-@click.option('--port', default=8000, help='Porta para o servidor HTTP')
+@click.option('--port', default=8000, help='Port for the HTTP server')
 def pacu_dash(port):
-    """Inicia o dashboard do PACU (servidor HTTP na pasta 'reports/')."""
+    """Starts the PACU dashboard (HTTP server in the 'reports/' folder)."""
     reports_dir = Path("reports")
     if not reports_dir.exists():
         reports_dir.mkdir(parents=True)
     
-    logging.info(f"Iniciando o Dashboard do PACU na porta {port}...")
+    logging.info(f"Starting PACU Dashboard on port {port}...")
     result = run_command(["python3", "-m", "http.server", str(port), "-d", "reports/"],
-                "iniciando Dashboard do PACU")
+                "starting PACU Dashboard")
     if result["success"]:
-        logging.info(f"Dashboard do PACU disponível em http://localhost:{port}/")
+        logging.info(f"PACU Dashboard available at http://localhost:{port}/")
     else:
         logging.error(result["message"])
 
 @cli.command()
 def full():
-    """Executa Prowler e PACU, gerando relatório."""
-    logging.info("Limpando dados de sessão do PACU...")
+    """Runs Prowler and PACU, generating a report."""
+    logging.info("Cleaning PACU session data...")
     run_command(["rm", "-rf", os.path.expanduser("~/.local/share/pacu/*")],
-                "limpeza de sessão do PACU")
+                "cleaning PACU session")
     
-    profile = input("Digite o perfil do AWS-CLI que deseja utilizar: ").strip()
-    session_name = input("Digite o nome da sessão: ").strip()
+    profile = input("Enter the AWS-CLI profile you want to use: ").strip()
+    session_name = input("Enter the session name: ").strip()
     
-    logging.info("Executando o Prowler...")
+    logging.info("Running Prowler...")
     prowler_result = run_prowler(profile)
     
     if prowler_result["success"]:
-        logging.info("Prowler executado com sucesso.")
+        logging.info("Prowler executed successfully.")
         json_file_path = prowler_result["data"]
         
-        # Se necessário, carregar e processar o relatório JSON gerado pelo Prowler
+        # If needed, load and process the JSON report generated by Prowler
         if os.path.exists(json_file_path):
             try:
                 with open(json_file_path) as pr:
                     risks = json.load(pr)
-                logging.info("Dados de risco do Prowler carregados.")
+                logging.info("Prowler risk data loaded.")
             except Exception as e:
-                logging.warning(f"Erro ao carregar relatório JSON do Prowler: {e}")
+                logging.warning(f"Error loading Prowler JSON report: {e}")
         else:
-            logging.warning("Relatório JSON do Prowler não encontrado.")
+            logging.warning("Prowler JSON report not found.")
         
-        # Inicia o PACU em modo enumeração após o Prowler
-        logging.info("Iniciando o PACU em modo enumeração...")
+        # Start PACU in enumeration mode after Prowler
+        logging.info("Starting PACU in enumeration mode...")
         category = "category_enum"
         pacu_result = run_pacu(profile, session_name, category)
         
         if pacu_result["success"]:
-            logging.info("PACU executado com sucesso. Gerando relatório...")
+            logging.info("PACU executed successfully. Generating report...")
             report_result = generate_report(pacu_result["data"])
             if report_result["success"]:
-                logging.info(f"Relatório gerado com sucesso: {report_result['data']['html_report']}")
+                logging.info(f"Report generated successfully: {report_result['data']['html_report']}")
             else:
-                logging.error(f"Erro ao gerar relatório: {report_result['message']}")
+                logging.error(f"Error generating report: {report_result['message']}")
         else:
-            logging.error(f"Erro ao executar PACU: {pacu_result['message']}")
+            logging.error(f"Error executing PACU: {pacu_result['message']}")
     else:
-        logging.error(f"Erro ao executar Prowler: {prowler_result['message']}")
+        logging.error(f"Error executing Prowler: {prowler_result['message']}")
 
 @cli.command()
 def np():
-    """Configura um novo perfil no AWS CLI."""
-    logging.info("Configurando um novo perfil para o AWS CLI...")
+    """Configures a new profile in AWS CLI."""
+    logging.info("Configuring a new profile for AWS CLI...")
     result = configure_profile()
     if result:
-        logging.info("Perfil configurado com sucesso.")
+        logging.info("Profile configured successfully.")
     else:
-        logging.error("Erro ao configurar o perfil.")
+        logging.error("Error configuring profile.")
 
 def main():
     # Configurar logging

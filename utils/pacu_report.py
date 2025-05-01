@@ -9,12 +9,12 @@ from tabulate import tabulate
 
 def extract_resources_from_db():
     """
-    Extrai dados das tabelas do Pacu e identifica recursos AWS.
+    Extracts data from Pacu tables and identifies AWS resources.
     
     Returns:
-        tuple: Uma tupla contendo os dados da sessão do Pacu e os dados das chaves AWS.
+        tuple: A tuple containing Pacu session data and AWS key data.
     """
-    # Conectar ao banco de dados SQLite
+    # Connect to SQLite database
     home_dir = os.path.expanduser('~')
     sql_dir = f"{home_dir}/.local/share/pacu/sqlite.db"
     
@@ -24,7 +24,7 @@ def extract_resources_from_db():
         
         logging.info("Connected to Pacu SQLite database")
         
-        # Verificar as colunas disponíveis em cada tabela
+        # Check available columns in each table
         cursor.execute("PRAGMA table_info(pacu_session);")
         pacu_session_columns = cursor.fetchall()
         logging.debug(f"Columns in the pacu_session table: {pacu_session_columns}")
@@ -33,15 +33,15 @@ def extract_resources_from_db():
         aws_key_columns = cursor.fetchall()
         logging.debug(f"Columns in the aws_key table: {aws_key_columns}")
         
-        # Extrair dados relevantes da tabela pacu_session
+        # Extract relevant data from pacu_session table
         cursor.execute("SELECT * FROM pacu_session;")
         pacu_session_data = cursor.fetchall()
         
-        # Extrair dados relevantes da tabela aws_key
+        # Extract relevant data from aws_key table
         cursor.execute("SELECT * FROM aws_key;")
         aws_key_data = cursor.fetchall()
         
-        # Fechar a conexão com o banco de dados
+        # Close database connection
         conn.close()
         
         return pacu_session_data, aws_key_data
@@ -55,15 +55,15 @@ def extract_resources_from_db():
 
 def extract_resources_with_regex(combined_data):
     """
-    Aplica expressões regulares para identificar diferentes tipos de recursos AWS.
+    Applies regular expressions to identify different types of AWS resources.
     
     Args:
-        combined_data (str): String combinada de dados para aplicar regex.
+        combined_data (str): Combined string of data to apply regex to.
         
     Returns:
-        dict: Um dicionário contendo os recursos AWS identificados.
+        dict: A dictionary containing the identified AWS resources.
     """
-    # Padrões para identificar diferentes tipos de recursos AWS
+    # Patterns to identify different types of AWS resources
     patterns = {
         # pacu_session_data
         "AccountId": r'account_id": "([^"]+)',
@@ -105,15 +105,15 @@ def extract_resources_with_regex(combined_data):
         "IAMPolicyARN": r'arn:aws:iam::(?:aws|\d{12}):policy/([^"]+)'
     }
     
-    # Dicionário para armazenar os recursos encontrados
-    aws_resources = {key: set() for key in patterns.keys()}  # Usando set para evitar duplicatas
+    # Dictionary to store found resources
+    aws_resources = {key: set() for key in patterns.keys()}  # Using set to avoid duplicates
     
-    # Extrair os recursos
+    # Extract resources
     for resource_type, pattern in patterns.items():
         matches = re.findall(pattern, combined_data)
-        aws_resources[resource_type].update(matches)  # Adicionar itens ao set, evitando duplicatas
+        aws_resources[resource_type].update(matches)  # Add items to set, avoiding duplicates
     
-    # Converter sets para listas para serialização JSON
+    # Convert sets to lists for JSON serialization
     aws_resources = {key: list(values) for key, values in aws_resources.items()}
     
     return aws_resources
@@ -312,39 +312,39 @@ def generate_html_report(aws_resources, pacu_results, output_path):
 
 def generate_report(pacu_results_path=None):
     """
-    Gera um relatório completo com base nos dados do Pacu.
+    Generates a complete report based on Pacu data.
     
     Args:
-        pacu_results_path (str, optional): Caminho para o arquivo JSON com os resultados do Pacu.
+        pacu_results_path (str, optional): Path to the JSON file with Pacu results.
         
     Returns:
-        dict: Um dicionário contendo o status da geração do relatório e os caminhos dos arquivos gerados.
+        dict: A dictionary containing the report generation status and the paths of generated files.
     """
     print("Building PACU Framework report....")
     logging.info("Building PACU Framework report")
     
     try:
-        # Criar diretório para relatórios se não existir
+        # Create directory for reports if it doesn't exist
         reports_dir = Path("reports/data")
         reports_dir.mkdir(parents=True, exist_ok=True)
         
-        # Extrair dados do banco de dados do Pacu
+        # Extract data from Pacu database
         pacu_session_data, aws_key_data = extract_resources_from_db()
         
-        # Combinar os dados extraídos em uma string para aplicar regexes
+        # Combine extracted data into a string to apply regexes
         combined_data = ' '.join(str(row) for row in pacu_session_data + aws_key_data)
         
-        # Extrair recursos AWS usando regex
+        # Extract AWS resources using regex
         aws_resources = extract_resources_with_regex(combined_data)
         
-        # Gerar arquivo JSON
+        # Generate JSON file
         json_output_path = reports_dir / "aws_resources.json"
         with open(json_output_path, 'w') as json_file:
             json.dump(aws_resources, json_file, indent=4)
         
         logging.info(f"JSON file generated at: {json_output_path}")
         
-        # Carregar resultados do Pacu se o caminho for fornecido
+        # Load Pacu results if path is provided
         pacu_results = []
         if pacu_results_path and os.path.exists(pacu_results_path):
             try:
@@ -353,16 +353,16 @@ def generate_report(pacu_results_path=None):
             except Exception as e:
                 logging.error(f"Error loading Pacu results: {e}")
         
-        # Gerar relatório HTML
+        # Generate HTML report
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         html_output_path = reports_dir / f"pacu_report_{timestamp}.html"
         generate_html_report(aws_resources, pacu_results, html_output_path)
         
-        # Exibir um resumo no console
+        # Display a summary in the console
         print("\nAWS Resources Summary:")
         resource_summary = []
         for resource_type, resources in aws_resources.items():
-            if resources:  # Só mostrar recursos que foram encontrados
+            if resources:  # Only show resources that were found
                 resource_summary.append([resource_type, len(resources)])
         
         print(tabulate(resource_summary, headers=["Resource Type", "Count"], tablefmt="grid"))

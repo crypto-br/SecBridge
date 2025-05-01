@@ -7,14 +7,14 @@ from botocore.exceptions import ClientError
 
 def configure_profile():
     """
-    Configura um novo perfil no AWS CLI com validação de credenciais.
+    Configures a new profile in AWS CLI with credential validation.
     
-    Esta função solicita ao usuário as informações necessárias para configurar
-    um novo perfil AWS, valida as credenciais antes de salvá-las e as armazena
-    de forma segura no arquivo de credenciais da AWS.
+    This function prompts the user for the necessary information to configure
+    a new AWS profile, validates the credentials before saving them, and stores
+    them securely in the AWS credentials file.
     
     Returns:
-        bool: True se o perfil foi configurado com sucesso, False caso contrário.
+        bool: True if the profile was configured successfully, False otherwise.
     """
     print("Configuring new profile in AWS CLI...")
     profile_name = input("What is the profile name? ")
@@ -22,7 +22,7 @@ def configure_profile():
     secret_key = input("Enter the Secret Key: ")
     region = input("What is the region? ")
     
-    # Validar credenciais antes de salvar
+    # Validate credentials before saving
     try:
         logging.info(f"Validating credentials for profile {profile_name}...")
         session = boto3.Session(
@@ -31,18 +31,18 @@ def configure_profile():
             region_name=region
         )
         sts = session.client('sts')
-        identity = sts.get_caller_identity()  # Verifica se as credenciais são válidas
+        identity = sts.get_caller_identity()  # Verify if credentials are valid
         account_id = identity['Account']
         logging.info(f"Credentials validated successfully for account {account_id}")
         
-        # Salvar credenciais de forma segura
+        # Save credentials securely
         config = configparser.ConfigParser()
         aws_credentials_path = os.path.expanduser("~/.aws/credentials")
         
-        # Garantir que o diretório ~/.aws existe
+        # Ensure ~/.aws directory exists
         os.makedirs(os.path.dirname(aws_credentials_path), exist_ok=True)
         
-        # Ler configuração existente, se houver
+        # Read existing configuration, if any
         if os.path.exists(aws_credentials_path):
             config.read(aws_credentials_path)
         
@@ -52,7 +52,7 @@ def configure_profile():
         config[profile_name]['aws_access_key_id'] = access_key
         config[profile_name]['aws_secret_access_key'] = secret_key
         
-        # Configurar região no arquivo config
+        # Configure region in config file
         aws_config_path = os.path.expanduser("~/.aws/config")
         config_parser = configparser.ConfigParser()
         
@@ -65,7 +65,7 @@ def configure_profile():
         
         config_parser[profile_section]['region'] = region
         
-        # Salvar as configurações
+        # Save configurations
         with open(aws_credentials_path, 'w') as credfile:
             config.write(credfile)
             

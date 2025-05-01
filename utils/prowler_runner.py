@@ -7,28 +7,28 @@ from pathlib import Path
 
 def run_prowler(profile_for_prowler):
     """
-    Executa o Prowler para realizar uma avaliação de segurança na conta AWS especificada.
+    Runs Prowler to perform a security assessment on the specified AWS account.
     
     Args:
-        profile_for_prowler (str): Nome do perfil AWS CLI a ser usado.
+        profile_for_prowler (str): Name of the AWS CLI profile to use.
         
     Returns:
-        dict: Um dicionário contendo o status da execução, o caminho do arquivo JSON gerado (se bem-sucedido)
-              e uma mensagem descritiva.
+        dict: A dictionary containing the execution status, the path of the generated JSON file (if successful)
+              and a descriptive message.
     """
     logging.info(f"Running Prowler with profile: {profile_for_prowler}")
     print(f"Running Prowler with profile: {profile_for_prowler}...")
     
-    # Criar diretório para relatórios se não existir
+    # Create directory for reports if it doesn't exist
     reports_dir = Path("reports/prowler")
     reports_dir.mkdir(parents=True, exist_ok=True)
     
-    # Timestamp para o nome do arquivo
+    # Timestamp for the filename
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = reports_dir / f"prowler_report_{timestamp}.json"
     
     try:
-        # Comando Prowler com opções expandidas
+        # Prowler command with expanded options
         prowler_command = [
             "prowler", 
             "aws", 
@@ -40,15 +40,15 @@ def run_prowler(profile_for_prowler):
         
         logging.info(f"Executing command: {' '.join(prowler_command)}")
         
-        # Executar o comando Prowler
+        # Execute Prowler command
         process = subprocess.run(
             prowler_command, 
             capture_output=True, 
             text=True,
-            check=True  # Lança exceção se o comando falhar
+            check=True  # Raises exception if command fails
         )
         
-        # Processar a saída para encontrar o arquivo JSON gerado
+        # Process output to find the generated JSON file
         output_text = process.stdout.strip()
         json_path = None
         
@@ -58,7 +58,7 @@ def run_prowler(profile_for_prowler):
                 if os.path.exists(json_path):
                     logging.info(f"JSON-ASFF file generated at: {json_path}")
                     
-                    # Copiar o arquivo para o nosso diretório de relatórios com nome padronizado
+                    # Copy the file to our reports directory with standardized name
                     with open(json_path, 'r') as src_file:
                         json_content = json.load(src_file)
                     
