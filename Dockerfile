@@ -51,7 +51,10 @@ RUN mkdir -p /app/logs /app/reports/data /app/reports/prowler
 
 # Set environment variables
 ENV PATH="/opt/pacu:${PATH}"
-ENV PYTHONPATH="/opt/pacu:${PYTHONPATH}"
+ENV PYTHONPATH="/opt/pacu"
+
+# Make Pacu executable and create a symlink
+RUN chmod +x /opt/pacu/pacu.py && ln -sf /opt/pacu/pacu.py /usr/local/bin/pacu
 
 # Default command
 ENTRYPOINT ["python3", "secbridge.py"]
