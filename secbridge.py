@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SecBridge v1.1.1
+SecBridge v1.2
 Integrates Prowler and Pacu for AWS security assessments.
 Author: Luiz Machado (@cryptobr)
 """
