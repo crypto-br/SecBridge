@@ -2,7 +2,31 @@ import os
 import subprocess
 import json
 import logging
+import platform
 from pathlib import Path
+
+def get_pacu_command():
+    """
+    Returns the appropriate Pacu command based on the operating system.
+    
+    Returns:
+        str: The command to run Pacu.
+    """
+    # Check if we're on Kali or ParrotOS
+    if platform.system().lower() == "linux":
+        try:
+            with open("/etc/os-release") as f:
+                os_release = f.read().lower()
+                if "kali" in os_release or "parrot" in os_release:
+                    # Check if pacu.py exists in the home directory
+                    pacu_path = os.path.expanduser("~/pacu/pacu.py")
+                    if os.path.exists(pacu_path):
+                        return "python3 " + pacu_path
+        except FileNotFoundError:
+            pass
+    
+    # Default command for other systems
+    return "pacu"
 
 def load_module_categories():
     """
@@ -37,7 +61,13 @@ def execute_pacu_module(session_name, module_name, profile, args=None):
     Returns:
         dict: A dictionary containing the module name, standard output, and error output.
     """
-    cmd = ['pacu', '--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile]
+    pacu_base = get_pacu_command()
+    
+    if " " in pacu_base:  # If it's a command with arguments (like python3 path/to/pacu.py)
+        cmd = pacu_base.split() + ['--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile]
+    else:
+        cmd = [pacu_base, '--session', session_name, '--exec', '--module-name', module_name, '--import-keys', profile]
+    
     if args:
         cmd.extend(['--module-args', args])
     
@@ -103,15 +133,28 @@ def run_pacu(profile_for_pacu, session_name, category):
     # List to store results
     results = []
     
+    # Get the appropriate pacu command
+    pacu_base = get_pacu_command()
+    
     # Check if the session already exists and is active, or create a new session
     try:
         logging.info(f"Activating Pacu session: {session_name}")
-        activate_session_command = ['pacu', '--session', session_name]
+        
+        if " " in pacu_base:  # If it's a command with arguments (like python3 path/to/pacu.py)
+            activate_session_command = pacu_base.split() + ['--session', session_name]
+        else:
+            activate_session_command = [pacu_base, '--session', session_name]
+            
         subprocess.run(activate_session_command, check=True, capture_output=True)
         logging.info(f"Session {session_name} activated")
     except subprocess.CalledProcessError:
         logging.info(f"Creating new Pacu session: {session_name}")
-        create_session_command = ['pacu', '--new-session', session_name]
+        
+        if " " in pacu_base:  # If it's a command with arguments (like python3 path/to/pacu.py)
+            create_session_command = pacu_base.split() + ['--new-session', session_name]
+        else:
+            create_session_command = [pacu_base, '--new-session', session_name]
+            
         subprocess.run(create_session_command, check=True, capture_output=True)
         logging.info(f"Session {session_name} created")
     

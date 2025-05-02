@@ -25,7 +25,7 @@ SecBridge é uma ferramenta de integração que conecta o [Prowler](https://gith
 
 1. **Clone o Repositório:**
    ```bash
-   git clone https://github.com/your-username/secbridge.git
+   git clone https://github.com/seu-usuario/secbridge.git
    cd secbridge
    ```
 
@@ -35,7 +35,7 @@ SecBridge é uma ferramenta de integração que conecta o [Prowler](https://gith
    ```
 
 3. **Verifique as Dependências do Sistema:**
-   Certifique-se de que AWS CLI, Python3, Prowler e Pacu estão instalados. Você pode verificar e instalar as dependências executando:
+   Certifique-se de que AWS CLI, Python3, Prowler e Pacu estejam instalados. Você pode verificar e instalar as dependências executando:
    ```bash
    python secbridge.py deps
    ```
@@ -44,7 +44,7 @@ SecBridge é uma ferramenta de integração que conecta o [Prowler](https://gith
 
 1. **Clone o Repositório:**
    ```bash
-   git clone https://github.com/your-username/secbridge.git
+   git clone https://github.com/seu-usuario/secbridge.git
    cd secbridge
    ```
 
@@ -54,12 +54,44 @@ SecBridge é uma ferramenta de integração que conecta o [Prowler](https://gith
    docker run -it --rm -v ~/.aws:/root/.aws:ro -v $(pwd)/reports:/app/reports -v $(pwd)/logs:/app/logs secbridge
    ```
 
-3. **Ou use Docker Compose:**
+3. **Ou use o Docker Compose:**
    ```bash
    docker-compose up --build
    ```
 
    Isso montará suas credenciais AWS e os diretórios de relatórios/logs.
+
+### Instalação em Kali Linux e ParrotOS
+
+Para distribuições Linux focadas em segurança como Kali Linux e ParrotOS, siga estas etapas adicionais:
+
+1. **Instale as dependências específicas:**
+   ```bash
+   sudo apt update
+   sudo apt install -y python3 python3-pip python3-venv git awscli
+   pip3 install boto3 botocore
+   ```
+
+2. **Instale o Prowler e o Pacu:**
+   ```bash
+   # Prowler
+   git clone https://github.com/prowler-cloud/prowler.git
+   cd prowler
+   pip3 install -r requirements.txt
+   cd ..
+
+   # Pacu
+   git clone https://github.com/RhinoSecurityLabs/pacu.git
+   cd pacu
+   pip3 install -r requirements.txt
+   cd ..
+   ```
+
+3. **Ajuste permissões se necessário:**
+   ```bash
+   chmod -R 755 ./reports
+   chmod -R 755 ./logs
+   ```
 
 ## Uso
 
@@ -126,7 +158,7 @@ Você pode executar a ferramenta com diferentes comandos:
 
 ## Testes
 
-Execute os testes unitários para garantir que tudo está funcionando corretamente:
+Execute os testes unitários para garantir que tudo esteja funcionando corretamente:
 
 ```bash
 pytest tests/
@@ -137,7 +169,7 @@ pytest tests/
 ```
 secbridge/
 ├── config/
-│   └── pacu_modules.json     # Configuração para módulos do Pacu
+│   └── pacu_modules.json     # Configuração para módulos Pacu
 ├── logs/                     # Diretório de arquivos de log
 ├── reports/                  # Relatórios gerados
 │   ├── data/                 # Arquivos de dados JSON
@@ -146,7 +178,7 @@ secbridge/
 ├── utils/                    # Módulos utilitários
 │   ├── aws_config.py         # Configuração de perfil AWS
 │   ├── dependencies.py       # Verificação de dependências
-│   ├── pacu_report.py        # Geração de relatórios para o Pacu
+│   ├── pacu_report.py        # Geração de relatórios para Pacu
 │   ├── pacu_runner.py        # Execução do Pacu
 │   └── prowler_runner.py     # Execução do Prowler
 ├── requirements.txt          # Dependências Python
@@ -157,11 +189,11 @@ secbridge/
 
 ## Contribuição
 
-Contribuições são bem-vindas! Se você tem sugestões para melhorias ou encontrou um bug, sinta-se à vontade para abrir uma issue ou enviar um pull request.
+Contribuições são bem-vindas! Se você tiver sugestões para melhorias ou encontrou um bug, sinta-se à vontade para abrir uma issue ou enviar um pull request.
 
 ## Licença
 
-Este projeto está licenciado sob a [MIT License](LICENSE).
+Este projeto está licenciado sob a [Licença MIT](LICENSE).
 
 ## Contato
 

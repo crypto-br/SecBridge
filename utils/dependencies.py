@@ -43,8 +43,17 @@ def check_deps():
     
     # Detect operating system
     os_type = detect_os()
-    if os_type in ["Debian", "RedHat"]:
-        package_manager = "apt-get" if os_type == "Debian" else "yum"
+    if os_type in ["Debian", "RedHat", "Kali", "ParrotOS"]:
+        package_manager = "apt-get" if os_type in ["Debian", "Kali", "ParrotOS"] else "yum"
+        
+        # Automatically install security distro specific dependencies
+        if os_type in ["Kali", "ParrotOS"]:
+            logging.info(f"Detected {os_type} security distribution. Installing specific dependencies...")
+            result = install_security_distro_deps(os_type)
+            if not result["success"]:
+                logging.error(f"Failed to install {os_type} specific dependencies: {result['message']}")
+                return result
+            logging.info(f"{os_type} specific dependencies installed successfully.")
     elif os_type == "macOS":
         package_manager = "brew"
     else:
@@ -181,7 +190,7 @@ def detect_os():
     Detects the operating system and returns an identifier.
     
     Returns:
-        str: "Debian", "RedHat", "macOS" or None if not supported.
+        str: "Debian", "RedHat", "macOS", "Kali", "ParrotOS" or None if not supported.
     """
     os_info = platform.system()
     if os_info == "Linux":
@@ -189,7 +198,13 @@ def detect_os():
             # First try using lsb_release command
             try:
                 distro = subprocess.check_output(["lsb_release", "-is"], text=True).strip().lower()
-                if distro in ["debian", "ubuntu", "linuxmint", "pop"]:
+                if distro == "kali":
+                    logging.info("Detected Kali Linux distribution")
+                    return "Kali"
+                elif distro == "parrot":
+                    logging.info("Detected ParrotOS distribution")
+                    return "ParrotOS"
+                elif distro in ["debian", "ubuntu", "linuxmint", "pop"]:
                     return "Debian"
                 elif distro in ["centos", "redhat", "fedora", "amazon", "rhel"]:
                     return "RedHat"
@@ -201,6 +216,16 @@ def detect_os():
                 pass
                 
             # Alternative method to detect distribution
+            if os.path.exists("/etc/os-release"):
+                with open("/etc/os-release") as f:
+                    os_release = f.read().lower()
+                    if "kali" in os_release:
+                        logging.info("Detected Kali Linux distribution via /etc/os-release")
+                        return "Kali"
+                    elif "parrot" in os_release:
+                        logging.info("Detected ParrotOS distribution via /etc/os-release")
+                        return "ParrotOS"
+            
             if os.path.exists("/etc/debian_version"):
                 logging.info("Detected Debian-based distribution via /etc/debian_version")
                 return "Debian"
@@ -218,6 +243,99 @@ def detect_os():
     else:
         logging.error(f"Unsupported operating system: {os_info}")
         return None
+
+def install_security_distro_deps(distro_type):
+    """
+    Automatically installs dependencies specific to security distributions like Kali Linux and ParrotOS.
+    
+    Args:
+        distro_type (str): The type of security distribution ("Kali" or "ParrotOS").
+        
+    Returns:
+        dict: A dictionary containing the installation status and a descriptive message.
+    """
+    try:
+        logging.info(f"Installing {distro_type} specific dependencies...")
+        
+        # Update package lists
+        logging.info("Updating package lists...")
+        subprocess.run(["sudo", "apt", "update", "-y"], check=True)
+        
+        # Install basic dependencies
+        logging.info("Installing basic dependencies...")
+        subprocess.run(["sudo", "apt", "install", "-y", "python3", "python3-pip", "python3-venv", "git", "awscli"], check=True)
+        
+        # Install Python packages
+        logging.info("Installing Python packages...")
+        subprocess.run(["pip3", "install", "boto3", "botocore"], check=True)
+        
+        # Install Prowler if not already installed
+        if not command_exists("prowler"):
+            logging.info("Installing Prowler...")
+            prowler_dir = Path.home() / "prowler"
+            if not prowler_dir.exists():
+                subprocess.run(["git", "clone", "https://github.com/prowler-cloud/prowler.git", str(prowler_dir)], check=True)
+                subprocess.run(["pip3", "install", "-r", str(prowler_dir / "requirements.txt")], check=True)
+                
+                # Add Prowler to PATH
+                prowler_bin = prowler_dir / "prowler"
+                if prowler_bin.exists():
+                    # Create symlink in /usr/local/bin
+                    try:
+                        subprocess.run(["sudo", "ln", "-sf", str(prowler_bin), "/usr/local/bin/prowler"], check=True)
+                        logging.info("Prowler symlink created in /usr/local/bin")
+                    except subprocess.CalledProcessError:
+                        logging.warning("Failed to create Prowler symlink. You may need to add it to your PATH manually.")
+        
+        # Install Pacu if not already installed
+        if not command_exists("pacu"):
+            logging.info("Installing Pacu...")
+            pacu_dir = Path.home() / "pacu"
+            if not pacu_dir.exists():
+                subprocess.run(["git", "clone", "https://github.com/RhinoSecurityLabs/pacu.git", str(pacu_dir)], check=True)
+                subprocess.run(["pip3", "install", "-r", str(pacu_dir / "requirements.txt")], check=True)
+                
+                # Add Pacu to PATH
+                pacu_bin = pacu_dir / "pacu.py"
+                if pacu_bin.exists():
+                    # Create symlink in /usr/local/bin
+                    try:
+                        # Create executable wrapper script
+                        wrapper_content = f"""#!/bin/bash
+cd {str(pacu_dir)}
+python3 pacu.py "$@"
+"""
+                        wrapper_path = "/usr/local/bin/pacu"
+                        with open("/tmp/pacu_wrapper", "w") as f:
+                            f.write(wrapper_content)
+                        
+                        subprocess.run(["sudo", "mv", "/tmp/pacu_wrapper", wrapper_path], check=True)
+                        subprocess.run(["sudo", "chmod", "+x", wrapper_path], check=True)
+                        logging.info("Pacu wrapper script created in /usr/local/bin")
+                    except (subprocess.CalledProcessError, IOError) as e:
+                        logging.warning(f"Failed to create Pacu wrapper script: {e}. You may need to add it to your PATH manually.")
+        
+        # Adjust permissions for reports and logs directories
+        logging.info("Adjusting permissions for reports and logs directories...")
+        reports_dir = Path("reports")
+        logs_dir = Path("logs")
+        
+        if reports_dir.exists():
+            subprocess.run(["chmod", "-R", "755", str(reports_dir)], check=True)
+        
+        if logs_dir.exists():
+            subprocess.run(["chmod", "-R", "755", str(logs_dir)], check=True)
+        
+        return {"success": True, "message": f"{distro_type} specific dependencies installed successfully."}
+    
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Error installing {distro_type} dependencies: {e}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except Exception as e:
+        error_msg = f"Unexpected error during {distro_type} dependency installation: {e}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
 
 def run_command(command, description=""):
     """

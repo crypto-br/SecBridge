@@ -39,6 +39,8 @@ SecBridge is an integration tool that connects [Prowler](https://github.com/prow
    ```bash
    python secbridge.py deps
    ```
+   
+   > **Note:** For security-focused distributions like Kali Linux and ParrotOS, SecBridge will automatically detect the distribution and install the necessary dependencies.
 
 ### Docker Installation
 
@@ -60,6 +62,22 @@ SecBridge is an integration tool that connects [Prowler](https://github.com/prow
    ```
 
    This will mount your AWS credentials and the reports/logs directories.
+
+### Installation on Kali Linux and ParrotOS
+
+SecBridge now automatically detects when it's running on security-focused Linux distributions like Kali Linux and ParrotOS, and will install all necessary dependencies without requiring manual steps. The automatic installation process includes:
+
+1. Updating package repositories
+2. Installing basic dependencies (python3, python3-pip, python3-venv, git, awscli)
+3. Installing required Python packages (boto3, botocore)
+4. Cloning and configuring Prowler and Pacu if not already installed
+5. Creating wrapper scripts and symbolic links for easy access to commands
+6. Adjusting permissions for report and log directories
+
+Simply run the dependency check and the installation will be handled automatically:
+```bash
+python secbridge.py deps
+```
 
 ## Usage
 

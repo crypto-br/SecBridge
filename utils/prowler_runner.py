@@ -3,7 +3,31 @@ import subprocess
 import logging
 import json
 import datetime
+import platform
 from pathlib import Path
+
+def get_prowler_command():
+    """
+    Returns the appropriate Prowler command based on the operating system.
+    
+    Returns:
+        str: The command to run Prowler.
+    """
+    # Check if we're on Kali or ParrotOS
+    if platform.system().lower() == "linux":
+        try:
+            with open("/etc/os-release") as f:
+                os_release = f.read().lower()
+                if "kali" in os_release or "parrot" in os_release:
+                    # Check if prowler.py exists in the home directory
+                    prowler_path = os.path.expanduser("~/prowler/prowler.py")
+                    if os.path.exists(prowler_path):
+                        return "python3 " + prowler_path
+        except FileNotFoundError:
+            pass
+    
+    # Default command for other systems
+    return "prowler"
 
 def run_prowler(profile_for_prowler):
     """
@@ -28,15 +52,27 @@ def run_prowler(profile_for_prowler):
     output_file = reports_dir / f"prowler_report_{timestamp}.json"
     
     try:
+        # Get the appropriate prowler command
+        prowler_base = get_prowler_command()
+        
         # Prowler command with expanded options
-        prowler_command = [
-            "prowler", 
-            "aws", 
-            "--severity", "critical", 
-            "--profile", profile_for_prowler,
-            "-M", "json-asff",
-            "-o", str(reports_dir)
-        ]
+        if " " in prowler_base:  # If it's a command with arguments (like python3 path/to/prowler.py)
+            prowler_command = prowler_base.split() + [
+                "aws", 
+                "--severity", "critical", 
+                "--profile", profile_for_prowler,
+                "-M", "json-asff",
+                "-o", str(reports_dir)
+            ]
+        else:
+            prowler_command = [
+                prowler_base, 
+                "aws", 
+                "--severity", "critical", 
+                "--profile", profile_for_prowler,
+                "-M", "json-asff",
+                "-o", str(reports_dir)
+            ]
         
         logging.info(f"Executing command: {' '.join(prowler_command)}")
         
